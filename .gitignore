@@ -1,0 +1,8 @@
+.sf/
+.sfdx/
+.tmp/
+node_modules/
+*.log
+*.key
+*.pem
+auth*.json

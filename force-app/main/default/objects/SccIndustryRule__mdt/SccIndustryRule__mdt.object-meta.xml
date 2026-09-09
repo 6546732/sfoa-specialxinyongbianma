@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>可由管理员维护的 Salesforce 行业值与内部行业码映射。</description>
+    <label>客户编码行业规则</label>
+    <visibility>Public</visibility>
+</CustomObject>

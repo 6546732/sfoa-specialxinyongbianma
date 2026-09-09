@@ -1,0 +1,75 @@
+<template>
+    <lightning-quick-action-panel header="生成客户编码">
+        <lightning-spinner if:true={busy} alternative-text="处理中"></lightning-spinner>
+        <template if:true={account}>
+            <div class="summary">
+                <strong>{account.name}</strong>
+                <div>当前编码：{account.currentCode}</div>
+            </div>
+            <template if:true={hasCurrentCode}>
+                <lightning-textarea label="换码原因（选填）" value={replacementReason} onchange={handleReason}></lightning-textarea>
+            </template>
+
+            <lightning-tabset active-tab-value="online">
+                <lightning-tab label="DeepSeek 联网查询" value="online">
+                    <p class="hint">优先使用企业全名完全匹配且校验通过的统一社会信用代码；查不到可靠匹配时按内部规则生成编码。请核对资料和来源后确认。</p>
+                    <lightning-button variant="brand" label="联网查询" onclick={handleResearch} disabled={busy}></lightning-button>
+                    <template if:true={researchResult}>
+                        <template if:true={autoFilledMessage}><div class="slds-notify slds-notify_alert slds-alert_success">{autoFilledMessage}</div></template>
+                        <template if:true={conflictMessage}><lightning-formatted-text value={conflictMessage}></lightning-formatted-text></template>
+                        <lightning-input label="查询到的登记企业全名" value={researchResult.matchedCompanyName} read-only></lightning-input>
+                        <lightning-input label="网上查询到的统一社会信用代码（候选）" value={researchResult.unifiedSocialCreditCode} read-only></lightning-input>
+                        <div class={codeDecisionClass}>
+                            <div><strong>最终编码来源：{researchResult.codeSource}</strong></div>
+                            <template if:true={researchResult.officialCodeRejectionReason}>
+                                <div>未采用网上代码的原因：{researchResult.officialCodeRejectionReason}</div>
+                            </template>
+                        </div>
+                        <lightning-input label="国家候选" data-field="billingCountry" value={researchResult.billingCountry} onchange={handleResearchValue}></lightning-input>
+                        <lightning-input label="省份候选" data-field="billingState" value={researchResult.billingState} onchange={handleResearchValue}></lightning-input>
+                        <lightning-input label="城市候选" data-field="billingCity" value={researchResult.billingCity} onchange={handleResearchValue}></lightning-input>
+                        <lightning-input label="行业候选" data-field="industry" value={researchResult.industry} onchange={handleResearchValue}></lightning-input>
+                        <lightning-input label="商业登记号码候选" data-field="businessRegistrationNumber" value={researchResult.businessRegistrationNumber} onchange={handleResearchValue}></lightning-input>
+                        <lightning-textarea label="查询说明" value={researchResult.notes} read-only></lightning-textarea>
+                        <div class="sources">
+                            <div>信息来源</div>
+                            <template for:each={sources} for:item="source">
+                                <a key={source.key} href={source.url} target="_blank" rel="noopener">{source.name}</a>
+                            </template>
+                        </div>
+                        <template if:true={hasSimilarCustomers}>
+                            <div class="slds-m-top_medium"><strong>港澳台相似客户</strong></div>
+                            <template for:each={similarCustomers} for:item="similar">
+                                <article key={similar.key} class="slds-box slds-m-top_x-small">
+                                    <strong>{similar.companyName}</strong>（{similar.territory}，可信度 {similar.confidence}%）
+                                    <div>相似原因：{similar.similarityReason}</div>
+                                    <div>匹配因素：{similar.factors}</div>
+                                    <template for:each={similar.sources} for:item="source">
+                                        <a key={source.key} href={source.url} target="_blank" rel="noopener">{source.name}</a>
+                                    </template>
+                                </article>
+                            </template>
+                        </template>
+                        <div class="actions">
+                            <lightning-button variant="brand" label={generationButtonLabel} onclick={handleGenerate} disabled={busy}></lightning-button>
+                        </div>
+                    </template>
+                </lightning-tab>
+
+                <lightning-tab label="快速生成" value="quick">
+                    <lightning-input label="17位编码主体或18位完整编码" value={manualBody} onchange={handleManualBody} maxlength="18"></lightning-input>
+                    <div class="actions">
+                        <lightning-button label="计算" onclick={handlePreview} disabled={busy}></lightning-button>
+                    </div>
+                    <template if:true={manualPreview}>
+                        <div class="result">校验位：<strong>{manualPreview.checkCharacter}</strong><br/>完整编码：<strong>{manualPreview.finalCode}</strong></div>
+                        <lightning-button variant="brand" label="确认写入客户" onclick={handleManualSave} disabled={busy}></lightning-button>
+                    </template>
+                </lightning-tab>
+            </lightning-tabset>
+        </template>
+        <div slot="footer">
+            <lightning-button label="关闭" onclick={handleClose}></lightning-button>
+        </div>
+    </lightning-quick-action-panel>
+</template>

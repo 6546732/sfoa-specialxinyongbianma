@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>NextSeq__c</fullName>
+    <defaultValue>1</defaultValue>
+    <deprecated>false</deprecated>
+    <description>下一次可使用的序号，不是已发出的最大序号。</description>
+    <externalId>false</externalId>
+    <label>下一可用序号</label>
+    <precision>18</precision>
+    <required>true</required>
+    <scale>0</scale>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

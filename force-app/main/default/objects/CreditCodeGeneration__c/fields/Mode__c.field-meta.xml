@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Mode__c</fullName>
+    <deprecated>false</deprecated>
+    <label>生成模式</label>
+    <required>true</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>AI_LOOKUP</fullName>
+                <default>false</default>
+                <label>AI 联网查询</label>
+            </value>
+            <value>
+                <fullName>MANUAL_CHECK_DIGIT</fullName>
+                <default>false</default>
+                <label>手工补全校验码</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>
