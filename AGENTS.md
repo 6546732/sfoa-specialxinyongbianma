@@ -1,5 +1,24 @@
 # Salesforce 特殊客户编码项目交接说明
 
+## 2026-09-10 当前实现与打包准则
+
+本节与 `force-app` 实际源码、`docs/INSTALLATION.md` 是当前交接说明；以下编号1至18节保留为历史背景，其旧类名、待确认事项与本节冲突时不适用。用户最新明确指令优先。
+
+- 当前是 SccActionController、SccDeepSeekClient、SccRuleEngine、SccGenerationService、SccSequenceService、SccCodeGenerator、SccManualCodeService、SccConstants 八个业务类及六个测试类；不使用历史批处理类，也没有本模块 Account Trigger。
+- 已确认客户字段为 Account.Business_Registration_Number__c（Text50）和 Account.xinyongdaima__c（Text255）；两者均作为包内组件维护。
+- 先采用登记全名完全匹配且来源及校验通过的官方统一社会信用代码，否则执行内部规则。联网查询会即时补写空资料；已有编码替换需要权限，换码原因选填。
+- 内部校验算法保持现行连续字母输入映射和MOD31；SHK30653538完整编码为SHK306535389，历史Q错误，不做特殊兼容。
+- 港澳台按地区格式配置优先使用登记号码，保留前导零；否则各自取号。各国外客户共享FOREIGN序列。组织状态默认存续AC。
+- 六种自定义元数据类型及436条规则均纳入源代码和非托管包。军队医院优先军事规则。四个直辖市填写区名时仍使用直辖市四位码。
+- DeepSeek通过Named Credential `DeepSeek_Core_Business`调用`/responses`；不使用历史DeepSeek_Config__c。凭据及用户主体授权是安装后配置，禁止提交密钥。
+- `code`为本次目标非托管包，不需要Dev Hub。`manifest/package.xml`为普通元数据清单，`manifest/unmanaged-code.xml`为带包名的完整包清单。
+- `scripts/apex/initialize-missing-sequences.apex`仅作为安装后人工步骤，已有计数器不覆盖；目标组织的缺失序列起始值必须先确认。
+- 本模块没有按CreatedDate筛选的日常批处理，不因历史文档指令启动任何批量清空、清理或重建任务。
+- 本次用户明确授权补齐GitHub及在zihao创建、填充并上传非托管包；不得据此连接或部署到正式环境。
+- 每次部署先dry-run及相关Apex测试；后续工作应先检查工作区和源沙盒差异，保持客户数据、密钥与序列计数不受打包影响。
+
+以下内容是旧交接历史，不是当前待执行任务。
+
 ## 1. 项目目标
 
 本项目在 Salesforce on Alibaba Cloud（SFOA）沙盒中，为 `Account` 客户补全国家、省份、城市和行业，并按企业内部规则生成字段 `xinyongdaima__c`。

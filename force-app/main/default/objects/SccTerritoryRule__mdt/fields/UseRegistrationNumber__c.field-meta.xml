@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>UseRegistrationNumber__c</fullName>
+    <defaultValue>true</defaultValue>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <label>优先使用登记号码</label>
+    <type>Checkbox</type>
+</CustomField>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>空军军事医疗机构</label>
+    <protected>false</protected>
+    <values>
+        <field>Active__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>BranchCode__c</field>
+        <value xsi:type="xsd:string">03</value>
+    </values>
+    <values>
+        <field>ContextKeywords__c</field>
+        <value xsi:type="xsd:string">医院;医疗;卫生院;诊所;疗养;防疫;卫生</value>
+    </values>
+    <values>
+        <field>Keyword__c</field>
+        <value xsi:type="xsd:string">空军</value>
+    </values>
+    <values>
+        <field>MilitaryIndustryCode__c</field>
+        <value xsi:type="xsd:string">WH</value>
+    </values>
+    <values>
+        <field>Priority__c</field>
+        <value xsi:type="xsd:double">500.0</value>
+    </values>
+</CustomMetadata>

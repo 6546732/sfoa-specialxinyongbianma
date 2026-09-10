@@ -1,0 +1,64 @@
+# 客户编码非托管包安装说明
+
+本模块以 zihao 沙盒已运行的 Scc 代码为源，软件包名称为 `code`。安装链接和版本状态见 `RELEASE.md`。
+
+## 包内组件
+
+| 组件 | 数量/内容 |
+|---|---|
+| Apex 类 | 14 个，包含 8 个业务类和 6 个测试类 |
+| 页面组件 | sccCreditCodeAction |
+| 客户快速操作 | Account.Generate_Credit_Code |
+| 权限集 | Scc_Credit_Code_User、Scc_Credit_Code_Admin |
+| 自定义权限 | 生成编码、替换已有编码 |
+| 业务对象 | CreditCodeSequence__c、CreditCodeGeneration__c 及字段 |
+| 客户字段 | Account.Business_Registration_Number__c（文本50位）、Account.xinyongdaima__c（文本255位） |
+| 自定义元数据类型 | 地区、行业、军事、国家、组织状态、地区格式，共6种及字段 |
+| 自定义元数据记录 | 地区369、行业20、军事35、国家4、状态2、格式6，共436条 |
+
+包仅带 Account 的两个自定义字段，不包含整个客户对象配置、客户页面布局或其他系统的客户触发器。
+
+## 安装前置依赖
+
+目标组织须支持此包所用 API 67.0、Apex、Lightning Web Components 和自定义元数据。必须先在独立测试组织验证安装；SFOA 跨区域安装能力以目标平台实际结果为准。
+
+若目标组织已有同名类、字段、权限集或元数据，应先核对归属及冲突。非托管包不是直接覆盖同名散装组件的通用部署工具。已有同一套组件的组织可以使用源码部署；不应为安装新包而直接删除现有客户字段或历史数据。
+
+本版本将 `DeepSeek_Core_Business` 命名凭据作为外部配置，未把任何认证密钥打包或提交 GitHub。管理员在使用联网功能前必须：
+
+1. 创建 API 名称完全相同的 Named Credential：`DeepSeek_Core_Business`。
+2. 配置目标环境自己的端点及所需 External Credential、认证参数和请求头。Apex 会访问 `callout:DeepSeek_Core_Business/responses`；服务需要支持当前代码的 Responses 请求格式、web_search、JSON 响应及模型 `deepseek-v4-pro`。不能仅按名称随意填一个不兼容的 API 地址。
+3. 为使用联网功能的用户授予 External Credential 主体访问权限；本包用户权限集不包含环境相关主体授权。
+4. 在目标环境填写其自己的 API Key 或完成认证，不从源沙盒复制访问令牌。
+
+用于 Salesforce CLI 登录的外部客户端应用不属于本模块运行依赖。它不需要随包安装。
+
+## 安装后配置
+
+1. 给普通用户分配 `客户编码生成用户`，给允许换码及维护序列的管理员分配 `客户编码管理员`。
+2. 在实际使用的 Account 页面布局的“Salesforce 移动和 Lightning Experience 操作”中添加“生成客户编码”；使用动态操作时在 Lightning 页面中配置。
+3. 在“自定义元数据类型 → 管理记录”核对六类规则。当前国家记录为日本、新加坡、泰国、美国；其他国家需另行补充。
+4. 核对目标组织 Account.Industry 选项与行业规则主值或别名一致。AI 返回的行业值没有自动映射成所有组织的自定义选项。
+5. 为六类序列建立缺失记录，并使用目标组织下一可用序号。可先编辑 `scripts/apex/initialize-missing-sequences.apex` 再手动执行；其中 null 为必须明确填写的值。已有计数器不变。不得直接使用沙盒序列值或在每次安装时重置为1。
+6. 用指定测试客户验证普通医院、军队医院、港澳台登记号码、国外、手工校验、官方信用代码采用和管理员换码。
+
+序列当前值、客户、历史审计记录、权限集分配及密钥都是组织数据/环境配置，不会因为对象定义入包而自动迁移。
+
+## 当前行为与边界
+
+- 优先采用登记全名匹配、来源和校验通过的官方统一社会信用代码；否则按内部规则生成。
+- 内部校验算法保持连续 A=10 至 Z=35 输入映射、MOD31 计算；`SHK30653538` 末位为9。
+- 查询动作会立即补写客户原来为空的资料；不覆盖已有资料。
+- 换码需要专用权限，换码原因选填。
+- 军事元数据先匹配；没有匹配时执行原有关键词和 AI 分类兼容逻辑。
+- 组织状态页面默认存续；注册中尚无页面选择，废弃客户仅有格式规则。
+- 非托管包不提供常规版本升级机制。后续修订应管理源码差异，不要通过卸载重装来保留业务数据。
+- 卸载前导出序列和审计记录并评估字段删除影响，尤其是包内客户编码与登记号码字段。
+
+## 重新构建
+
+先运行 `python scripts/build-package-manifest.py` 校验记录数量并生成显式清单。
+
+将源格式转换为 Metadata API 格式后，以 `manifest/unmanaged-code.xml` 替换转换输出根目录的 package.xml，再先 dry-run、运行六个测试类，确认后部署至指定沙盒的 `code` 包。该清单的 fullName 用于维护非托管包容器；普通部署使用无 fullName 的 `manifest/package.xml`。
+
+上传使用 `sf package1 version create`，目标为源沙盒，package-id 为包的 033 开头 ID，不传 managed-released 参数。本仓库不需要也不配置 Dev Hub。

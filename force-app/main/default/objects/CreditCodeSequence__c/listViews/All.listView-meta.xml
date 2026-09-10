@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>All</fullName>
+    <columns>NAME</columns>
+    <columns>NextSeq__c</columns>
+    <columns>Category__c</columns>
+    <columns>CREATED_DATE</columns>
+    <columns>OWNER.FIRST_NAME</columns>
+    <columns>LastIssuedAccount__c</columns>
+    <columns>LastIssuedAt__c</columns>
+    <filterScope>Everything</filterScope>
+    <label>全部</label>
+</ListView>

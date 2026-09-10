@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>战略支援军事科研院所</label>
+    <protected>false</protected>
+    <values>
+        <field>Active__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>BranchCode__c</field>
+        <value xsi:type="xsd:string">04</value>
+    </values>
+    <values>
+        <field>ContextKeywords__c</field>
+        <value xsi:type="xsd:string">科研;研究院;研究所;研究中心;实验室;研发</value>
+    </values>
+    <values>
+        <field>Keyword__c</field>
+        <value xsi:type="xsd:string">战略支援</value>
+    </values>
+    <values>
+        <field>MilitaryIndustryCode__c</field>
+        <value xsi:type="xsd:string">WR</value>
+    </values>
+    <values>
+        <field>Priority__c</field>
+        <value xsi:type="xsd:double">200.0</value>
+    </values>
+</CustomMetadata>

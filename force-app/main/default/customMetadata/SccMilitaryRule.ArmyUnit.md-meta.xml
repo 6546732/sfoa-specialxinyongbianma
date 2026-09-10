@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>陆军军队建制单位</label>
+    <protected>false</protected>
+    <values>
+        <field>Active__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>BranchCode__c</field>
+        <value xsi:type="xsd:string">01</value>
+    </values>
+    <values>
+        <field>ContextKeywords__c</field>
+        <value xsi:type="xsd:string">作战;建制;司令部;后勤;保障部队</value>
+    </values>
+    <values>
+        <field>Keyword__c</field>
+        <value xsi:type="xsd:string">陆军</value>
+    </values>
+    <values>
+        <field>MilitaryIndustryCode__c</field>
+        <value xsi:type="xsd:string">WA</value>
+    </values>
+    <values>
+        <field>Priority__c</field>
+        <value xsi:type="xsd:double">100.0</value>
+    </values>
+</CustomMetadata>

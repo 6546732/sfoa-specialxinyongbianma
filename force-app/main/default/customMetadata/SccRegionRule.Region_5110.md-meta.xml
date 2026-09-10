@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>四川省内江市</label>
+    <protected>false</protected>
+    <values>
+        <field>Active__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>Aliases__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>CityName__c</field>
+        <value xsi:type="xsd:string">内江市</value>
+    </values>
+    <values>
+        <field>Priority__c</field>
+        <value xsi:type="xsd:double">100.0</value>
+    </values>
+    <values>
+        <field>ProvinceName__c</field>
+        <value xsi:type="xsd:string">四川省</value>
+    </values>
+    <values>
+        <field>RegionCode__c</field>
+        <value xsi:type="xsd:string">5110</value>
+    </values>
+</CustomMetadata>
