@@ -70,7 +70,11 @@ private class SccActionControllerTest {
         CreditCodeGeneration__c jsonAudit = readyAudit(jsonAccount.Id);
         CreditCodeGeneration__c objectAudit = readyAudit(objectAccount.Id);
         CreditCodeGeneration__c auditFallback = readyAudit(auditAccount.Id);
-        auditFallback.AiResult__c = JSON.serialize(hkSelection('06886002'));
+        SccDeepSeekClient.ResearchResult fallbackSelection = hkSelection('06886002');
+        fallbackSelection.matchedCompanyName = auditAccount.Name;
+        fallbackSelection.exactNameMatch = true;
+        fallbackSelection.sources = officialResearch(auditAccount.Name).sources;
+        auditFallback.AiResult__c = JSON.serialize(fallbackSelection);
         Database.insert(
             new List<CreditCodeGeneration__c>{jsonAudit, objectAudit, auditFallback},
             AccessLevel.SYSTEM_MODE
@@ -201,6 +205,9 @@ private class SccActionControllerTest {
     }
 
     private class DeepSeekMock implements HttpCalloutMock {
+        private Boolean matched = true;
+        DeepSeekMock() {}
+        DeepSeekMock(Boolean matched) { this.matched = matched; }
         public HttpResponse respond(HttpRequest request) {
             System.assert(request.getEndpoint().contains('DeepSeek_Core_Business'));
             HttpResponse response = new HttpResponse();
@@ -208,6 +215,8 @@ private class SccActionControllerTest {
             response.setBody(JSON.serialize(new Map<String,Object>{
                 'output_text'=>JSON.serialize(new Map<String,Object>{
                     'identityConfirmed'=>true,
+                    'exactNameMatch'=>matched,
+                    'matchedCompanyName'=>matched ? '香港测试客户' : '其他公司',
                     'billingCountry'=>'香港',
                     'billingState'=>'香港特别行政区',
                     'billingCity'=>'香港',
@@ -222,5 +231,42 @@ private class SccActionControllerTest {
             }));
             return response;
         }
+    }
+
+    @IsTest
+    static void unmatchedResearchDoesNotWriteOrGenerateFromOtherCompany() {
+        SccActionController.bypassPermissionForTests = true;
+        Account value = new Account(Name='香港测试客户');
+        insert value;
+        Test.setMock(HttpCalloutMock.class, new DeepSeekMock(false));
+        Test.startTest();
+        SccDeepSeekClient.ResearchResult result = SccActionController.research(value.Id);
+        Account actual = [SELECT BillingCountry, Business_Registration_Number__c FROM Account WHERE Id=:value.Id];
+        System.assertEquals(null, actual.BillingCountry);
+        System.assertEquals(null, actual.Business_Registration_Number__c);
+        System.assertEquals(0, result.autoFilledFields.size());
+        Boolean rejected = false;
+        try {
+            SccActionController.generateFromResearch(value.Id, result.auditId, hkSelection('0690133'), null,
+                null, null, null, null, null, null, null, null, null, null);
+        } catch (AuraHandledException expected) { rejected = true; }
+        System.assert(rejected, '不能使用其他企业资料生成客户编码');
+        Test.stopTest();
+        System.assertEquals(null, [SELECT xinyongdaima__c FROM Account WHERE Id=:value.Id].xinyongdaima__c);
+    }
+
+    @IsTest
+    static void auditSnapshotPreservesValuesBeforeAutomaticFill() {
+        SccActionController.bypassPermissionForTests = true;
+        Account value = new Account(Name='香港测试客户');
+        insert value;
+        Test.setMock(HttpCalloutMock.class, new DeepSeekMock());
+        Test.startTest();
+        SccDeepSeekClient.ResearchResult result = SccActionController.research(value.Id);
+        Test.stopTest();
+        CreditCodeGeneration__c audit = [SELECT InputSnapshot__c FROM CreditCodeGeneration__c WHERE Id=:result.auditId];
+        Map<String,Object> beforeFill = (Map<String,Object>)JSON.deserializeUntyped(audit.InputSnapshot__c);
+        System.assertEquals(null, beforeFill.get('billingCountry'));
+        System.assertEquals('香港', [SELECT BillingCountry FROM Account WHERE Id=:value.Id].BillingCountry);
     }
 }

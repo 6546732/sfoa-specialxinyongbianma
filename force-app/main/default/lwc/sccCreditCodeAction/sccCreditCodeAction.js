@@ -117,8 +117,11 @@ export default class SccCreditCodeAction extends LightningElement {
 
     async handlePreview() {
         this.busy = true;
+        this.manualPreview = null;
+        const requestedBody = this.manualBody;
         try {
-            this.manualPreview = await preview({ codeBody: this.manualBody });
+            const result = await preview({ codeBody: requestedBody });
+            if (this.manualBody === requestedBody) this.manualPreview = result;
         } catch (error) {
             this.toast('无法计算校验码', this.message(error), 'error');
         } finally {
@@ -144,6 +147,7 @@ export default class SccCreditCodeAction extends LightningElement {
 
     async handleResearch() {
         this.busy = true;
+        this.researchResult = null;
         try {
             const [detailsResult, similarResult] = await Promise.allSettled([
                 research({ accountId: this.recordId }),

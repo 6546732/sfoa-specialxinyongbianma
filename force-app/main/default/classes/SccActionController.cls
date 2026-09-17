@@ -26,14 +26,19 @@ public with sharing class SccActionController {
             normalizeCertainMilitaryCodes(value.Name, result);
             describeCodeDecision(value.Name, result);
             Account current = load(accountId, true);
-            result.autoFilledFields = applyOnlyMissing(current, result);
+            String beforeFill = snapshot(current);
+            result.autoFilledFields = isMatchedIdentity(current.Name, result)
+                ? applyOnlyMissing(current, result) : new List<String>();
             result.warnings = findConflicts(current, result);
+            if (!isMatchedIdentity(current.Name, result)) {
+                result.warnings.add('联网主体未完全匹配，未自动补写客户资料；内部编码仅使用客户已有资料。');
+            }
             if (!result.autoFilledFields.isEmpty()) Database.update(current, AccessLevel.SYSTEM_MODE);
             CreditCodeGeneration__c audit = new CreditCodeGeneration__c(
                 Account__c = accountId,
                 Mode__c = 'AI_LOOKUP',
                 Status__c = 'READY',
-                InputSnapshot__c = snapshot(current),
+                InputSnapshot__c = beforeFill,
                 AiResult__c = JSON.serialize(result),
                 SourceUrls__c = sourceUrls(result.sources)
             );
@@ -113,6 +118,13 @@ public with sharing class SccActionController {
         }
         Account value = load(accountId, true);
         enforceReplacement(value.xinyongdaima__c, replacementReason);
+        if (String.isNotBlank(audit.AiResult__c)) {
+            SccDeepSeekClient.ResearchResult storedIdentity = (SccDeepSeekClient.ResearchResult)JSON.deserialize(
+                audit.AiResult__c, SccDeepSeekClient.ResearchResult.class);
+            if (!isMatchedIdentity(value.Name, storedIdentity)) {
+                effectiveSelection = new SccDeepSeekClient.ResearchResult();
+            }
+        }
         applyOnlyMissing(value, effectiveSelection);
 
         SccRuleEngine.Context context = toContext(value, effectiveSelection);
@@ -166,6 +178,14 @@ public with sharing class SccActionController {
             ReplacementReason__c = replacementReason
         ), AccessLevel.SYSTEM_MODE);
         return preview.finalCode;
+    }
+
+    @TestVisible
+    private static Boolean isMatchedIdentity(String customerName, SccDeepSeekClient.ResearchResult result) {
+        return result != null && result.exactNameMatch == true
+            && String.isNotBlank(customerName) && String.isNotBlank(result.matchedCompanyName)
+            && customerName.trim().equals(result.matchedCompanyName.trim())
+            && result.sources != null && !result.sources.isEmpty();
     }
 
     @TestVisible
