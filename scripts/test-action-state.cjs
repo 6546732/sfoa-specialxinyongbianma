@@ -37,5 +37,18 @@ function component(overrides) {
   await lookup.handleResearch();
   assert.equal(lookup.researchResult, null, 'failed retry must not leave old research usable');
   assert.equal(lookup.busy, false);
-  console.log('PASS: 3 asynchronous UI state regressions');
+  assert.equal(lookup.researching, false);
+  let calls = 0;
+  const success = component({
+    research: async () => { calls++; return { sources: [{name: '登记网站', url: 'https://registry.example.test/company'}] }; },
+    findSimilarCustomers: () => { throw new Error('similar search must never run'); },
+    notifyRecordUpdateAvailable: async () => {}
+  });
+  success.refreshAccount = async () => {};
+  await success.handleResearch();
+  assert.equal(calls, 1);
+  assert.equal(success.sources[0].domain, 'registry.example.test');
+  assert.equal(success.hasSources, true);
+  assert.equal(success.researching, false);
+  console.log('PASS: 4 UI state regressions, single lookup and visible source domain');
 })().catch(error => { console.error(error); process.exitCode = 1; });

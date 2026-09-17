@@ -4,7 +4,6 @@ import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { notifyRecordUpdateAvailable } from 'lightning/uiRecordApi';
 import loadAccount from '@salesforce/apex/SccActionController.loadAccount';
 import research from '@salesforce/apex/SccActionController.research';
-import findSimilarCustomers from '@salesforce/apex/SccActionController.findSimilarCustomers';
 import generateFromResearch from '@salesforce/apex/SccActionController.generateFromResearch';
 import saveManual from '@salesforce/apex/SccActionController.saveManual';
 import preview from '@salesforce/apex/SccManualCodeService.preview';
@@ -17,6 +16,7 @@ export default class SccCreditCodeAction extends LightningElement {
     manualPreview;
     replacementReason = '';
     busy = false;
+    researching = false;
 
     @api
     set recordId(value) {
@@ -33,8 +33,14 @@ export default class SccCreditCodeAction extends LightningElement {
     }
 
     get sources() {
-        return (this.researchResult?.sources || []).map((value, index) => ({ ...value, key: `${index}-${value.url}` }));
+        return (this.researchResult?.sources || []).filter(value => /^https?:\/\//i.test(value?.url || '')).map((value, index) => ({
+            ...value, name: value.name || value.url,
+            domain: value.url.replace(/^https?:\/\//i, '').split('/')[0],
+            key: `${index}-${value.url}`
+        }));
     }
+
+    get hasSources() { return this.sources.length > 0; }
 
     get autoFilledMessage() {
         const values = this.researchResult?.autoFilledFields || [];
@@ -55,21 +61,6 @@ export default class SccCreditCodeAction extends LightningElement {
         return this.researchResult?.officialCodeAccepted
             ? 'slds-notify slds-notify_alert slds-alert_success'
             : 'slds-notify slds-notify_alert slds-alert_warning';
-    }
-
-    get similarCustomers() {
-        return (this.researchResult?.similarCustomers || []).map((value, index) => ({
-            ...value,
-            key: `${index}-${value.companyName}`,
-            factors: (value.matchedFactors || []).join('、'),
-            sources: (value.sources || []).map((source, sourceIndex) => ({
-                ...source, key: `${index}-${sourceIndex}-${source.url}`
-            }))
-        }));
-    }
-
-    get hasSimilarCustomers() {
-        return this.similarCustomers.length > 0;
     }
 
     async refreshAccount() {
@@ -147,23 +138,16 @@ export default class SccCreditCodeAction extends LightningElement {
 
     async handleResearch() {
         this.busy = true;
+        this.researching = true;
         this.researchResult = null;
         try {
-            const [detailsResult, similarResult] = await Promise.allSettled([
-                research({ accountId: this.recordId }),
-                findSimilarCustomers({ accountId: this.recordId })
-            ]);
-            if (detailsResult.status !== 'fulfilled') throw detailsResult.reason;
-            const details = detailsResult.value;
-            const similarCustomers = similarResult.status === 'fulfilled' ? similarResult.value : [];
-            const warnings = [...(details.warnings || [])];
-            if (similarResult.status !== 'fulfilled') warnings.push('港澳台相似客户查询未完成，可重新查询。');
-            this.researchResult = { ...details, similarCustomers, warnings };
+            this.researchResult = await research({ accountId: this.recordId });
             await notifyRecordUpdateAvailable([{ recordId: this.recordId }]);
             await this.refreshAccount();
         } catch (error) {
             this.toast('联网查询失败', this.message(error), 'error');
         } finally {
+            this.researching = false;
             this.busy = false;
         }
     }

@@ -14,11 +14,26 @@
                 <lightning-tab label="DeepSeek 联网查询" value="online">
                     <p class="hint">优先使用企业全名完全匹配且校验通过的统一社会信用代码；查不到可靠匹配时按内部规则生成编码。请核对资料和来源后确认。</p>
                     <lightning-button variant="brand" label="联网查询" onclick={handleResearch} disabled={busy}></lightning-button>
+                    <template if:true={researching}>
+                        <p role="status" aria-live="polite" class="slds-m-top_small">正在通过 DeepSeek 联网查询并核对企业全名，结果返回后将显示来源网站和原文链接，请稍候。</p>
+                    </template>
                     <template if:true={researchResult}>
                         <template if:true={autoFilledMessage}><div class="slds-notify slds-notify_alert slds-alert_success">{autoFilledMessage}</div></template>
                         <template if:true={conflictMessage}><lightning-formatted-text value={conflictMessage}></lightning-formatted-text></template>
                         <lightning-input label="查询到的登记企业全名" value={researchResult.matchedCompanyName} read-only></lightning-input>
                         <lightning-input label="网上查询到的统一社会信用代码（候选）" value={researchResult.unifiedSocialCreditCode} read-only></lightning-input>
+                        <div class="sources slds-box slds-m-vertical_small">
+                            <strong>本次查询的信息来源</strong>
+                            <template if:true={hasSources}>
+                                <template for:each={sources} for:item="source">
+                                    <div key={source.key} class="slds-m-top_x-small">
+                                        <a href={source.url} target="_blank" rel="noopener noreferrer">{source.name} — 查看原文</a>
+                                        <div class="slds-text-color_weak">{source.domain}</div>
+                                    </div>
+                                </template>
+                            </template>
+                            <template if:false={hasSources}><p>本次未返回可用来源链接，网上信用代码不能作为已核验结果采用。</p></template>
+                        </div>
                         <div class={codeDecisionClass}>
                             <div><strong>最终编码来源：{researchResult.codeSource}</strong></div>
                             <template if:true={researchResult.officialCodeRejectionReason}>
@@ -31,25 +46,6 @@
                         <lightning-input label="行业候选" data-field="industry" value={researchResult.industry} onchange={handleResearchValue}></lightning-input>
                         <lightning-input label="商业登记号码候选" data-field="businessRegistrationNumber" value={researchResult.businessRegistrationNumber} onchange={handleResearchValue}></lightning-input>
                         <lightning-textarea label="查询说明" value={researchResult.notes} read-only></lightning-textarea>
-                        <div class="sources">
-                            <div>信息来源</div>
-                            <template for:each={sources} for:item="source">
-                                <a key={source.key} href={source.url} target="_blank" rel="noopener">{source.name}</a>
-                            </template>
-                        </div>
-                        <template if:true={hasSimilarCustomers}>
-                            <div class="slds-m-top_medium"><strong>港澳台相似客户</strong></div>
-                            <template for:each={similarCustomers} for:item="similar">
-                                <article key={similar.key} class="slds-box slds-m-top_x-small">
-                                    <strong>{similar.companyName}</strong>（{similar.territory}，可信度 {similar.confidence}%）
-                                    <div>相似原因：{similar.similarityReason}</div>
-                                    <div>匹配因素：{similar.factors}</div>
-                                    <template for:each={similar.sources} for:item="source">
-                                        <a key={source.key} href={source.url} target="_blank" rel="noopener">{source.name}</a>
-                                    </template>
-                                </article>
-                            </template>
-                        </template>
                         <div class="actions">
                             <lightning-button variant="brand" label={generationButtonLabel} onclick={handleGenerate} disabled={busy}></lightning-button>
                         </div>
