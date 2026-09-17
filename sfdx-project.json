@@ -2,9 +2,16 @@
   "packageDirectories": [
     {
       "path": "force-app",
-      "default": true
+      "default": true,
+      "package": "SmartX Customer Credit Code",
+      "versionName": "Credit code preview and verification",
+      "versionNumber": "0.2.0.NEXT"
     }
   ],
   "name": "sfoa-specialxinyongbianma",
-  "sourceApiVersion": "67.0"
+  "sourceApiVersion": "67.0",
+  "packageAliases": {
+    "SmartX Customer Credit Code": "0HoC800000008wrKAA",
+    "SmartX Customer Credit Code@0.2.0-1": "04tC8000000RHG5IAO"
+  }
 }
