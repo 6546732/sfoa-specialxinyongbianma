@@ -45,6 +45,7 @@ function component(overrides) {
     notifyRecordUpdateAvailable: async () => {}
   });
   success.refreshAccount = async () => {};
+  success.handleInternalPreview = async () => {};
   await success.handleResearch();
   assert.equal(calls, 1);
   assert.equal(success.sources[0].domain, 'registry.example.test');

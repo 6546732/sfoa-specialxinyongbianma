@@ -234,6 +234,39 @@ private class SccActionControllerTest {
     }
 
     @IsTest
+    static void previewsConfirmedHospitalWithoutConsumingSequence() {
+        SccActionController.bypassPermissionForTests = true;
+        Account value = new Account(Name='中国人民解放军空军总医院');
+        insert value;
+        CreditCodeSequence__c counter = new CreditCodeSequence__c(Category__c='MILITARY', NextSeq__c=42);
+        insert counter;
+        SccDeepSeekClient.ResearchResult candidate = officialResearch('中国人民解放军空军特色医学中心');
+        candidate.exactNameMatch = false;
+        candidate.billingCountry = '中国';
+        candidate.billingState = '北京市';
+        candidate.billingCity = '北京市海淀区';
+        candidate.isMilitary = true;
+        candidate.branchCode = '01';
+        CreditCodeGeneration__c audit = readyAudit(value.Id);
+        audit.AiResult__c = JSON.serialize(candidate);
+        insert audit;
+        SccActionController.InternalPreview blocked = SccActionController.previewInternal(value.Id, audit.Id, JSON.serialize(candidate));
+        System.assertEquals(null, blocked.finalCode);
+        System.assert(blocked.error.contains('国家'));
+        candidate.confirmedForInternal = true;
+        SccActionController.InternalPreview result = SccActionController.previewInternal(value.Id, audit.Id, JSON.serialize(candidate));
+        System.assertEquals(null, result.error);
+        System.assert(result.finalCode.startsWith('SCN1101WH030042AC'));
+        System.assert(result.explanation.contains('空军（03）'));
+        System.assertEquals(42, [SELECT NextSeq__c FROM CreditCodeSequence__c WHERE Id=:counter.Id].NextSeq__c);
+        System.assertEquals(null, [SELECT BillingCountry FROM Account WHERE Id=:value.Id].BillingCountry);
+        String saved = SccActionController.generateFromResearch(value.Id, audit.Id, null, JSON.serialize(candidate),
+            null,null,null,null,null,null,null,null,null,null);
+        System.assertEquals(result.finalCode, saved);
+        System.assertEquals(43, [SELECT NextSeq__c FROM CreditCodeSequence__c WHERE Id=:counter.Id].NextSeq__c);
+    }
+
+    @IsTest
     static void unmatchedResearchDoesNotWriteOrGenerateFromOtherCompany() {
         SccActionController.bypassPermissionForTests = true;
         Account value = new Account(Name='香港测试客户');

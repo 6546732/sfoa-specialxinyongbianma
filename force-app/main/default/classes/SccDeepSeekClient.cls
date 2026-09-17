@@ -274,6 +274,7 @@ public with sharing class SccDeepSeekClient {
     public class ResearchResult {
         @AuraEnabled public Id auditId;
         @AuraEnabled public Boolean identityConfirmed;
+        @AuraEnabled public Boolean confirmedForInternal;
         @AuraEnabled public String billingCountry;
         @AuraEnabled public String billingState;
         @AuraEnabled public String billingCity;

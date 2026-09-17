@@ -121,7 +121,7 @@ public with sharing class SccActionController {
         if (String.isNotBlank(audit.AiResult__c)) {
             SccDeepSeekClient.ResearchResult storedIdentity = (SccDeepSeekClient.ResearchResult)JSON.deserialize(
                 audit.AiResult__c, SccDeepSeekClient.ResearchResult.class);
-            if (!isMatchedIdentity(value.Name, storedIdentity)) {
+            if (!isMatchedIdentity(value.Name, storedIdentity) && effectiveSelection.confirmedForInternal != true) {
                 effectiveSelection = new SccDeepSeekClient.ResearchResult();
             }
         }
@@ -158,6 +158,84 @@ public with sharing class SccActionController {
         } catch (Exception error) {
             throw new AuraHandledException(error.getMessage());
         }
+    }
+
+    @AuraEnabled
+    public static InternalPreview previewInternal(Id accountId, Id auditId, String selectionJson) {
+        requireGeneratePermission();
+        Account value = load(accountId, false);
+        List<CreditCodeGeneration__c> audits = [SELECT AiResult__c FROM CreditCodeGeneration__c
+            WHERE Id=:auditId AND Account__c=:accountId AND Status__c='READY' LIMIT 1];
+        if (audits.isEmpty()) throw new AuraHandledException('查询结果已失效，请重新查询。');
+        SccDeepSeekClient.ResearchResult selected = String.isBlank(selectionJson)
+            ? new SccDeepSeekClient.ResearchResult()
+            : (SccDeepSeekClient.ResearchResult)JSON.deserialize(selectionJson, SccDeepSeekClient.ResearchResult.class);
+        SccDeepSeekClient.ResearchResult stored = String.isBlank(audits[0].AiResult__c) ? null
+            : (SccDeepSeekClient.ResearchResult)JSON.deserialize(audits[0].AiResult__c, SccDeepSeekClient.ResearchResult.class);
+        InternalPreview result = new InternalPreview();
+        result.needsConfirmation = !isMatchedIdentity(value.Name, stored) && selected.confirmedForInternal != true;
+        if (result.needsConfirmation) selected = new SccDeepSeekClient.ResearchResult();
+        applyOnlyMissing(value, selected);
+        normalizeCertainMilitaryCodes(value.Name, selected);
+        result.militaryIndustryCode = selected.militaryIndustryCode;
+        result.branchCode = selected.branchCode;
+        List<String> missing = new List<String>();
+        if (String.isBlank(value.BillingCountry)) missing.add('国家/地区');
+        Boolean mainland = String.isNotBlank(value.BillingCountry)
+            && SccRuleEngine.classifyTerritory(value.BillingCountry, value.BillingState) == 'MAINLAND';
+        if (mainland) {
+            if (String.isBlank(value.BillingState)) missing.add('省份');
+            if (String.isBlank(value.BillingCity)) missing.add('城市');
+        }
+        if (!missing.isEmpty()) {
+            result.error = '缺少已确认资料：' + String.join(missing, '、');
+            return result;
+        }
+        try {
+            SccRuleEngine.Context context = toContext(value, selected);
+            SccRuleEngine.Decision decision = SccRuleEngine.resolve(context);
+            result.militaryIndustryCode = decision.militaryIndustryCode;
+            result.branchCode = decision.branchCode;
+            result.regionCode = decision.regionCode;
+            result.sequenceCategory = decision.sequenceCategory;
+            SccGenerationService.Result generated = SccGenerationService.preview(context);
+            result.finalCode = generated.finalCode;
+            List<String> reasons = new List<String>{'客户：' + value.Name,
+                '采用资料：' + (String.isBlank(value.BillingCountry) ? '' : value.BillingCountry)
+                    + ' / ' + (String.isBlank(value.BillingState) ? '' : value.BillingState)
+                    + ' / ' + (String.isBlank(value.BillingCity) ? '' : value.BillingCity)};
+            if (decision.territory == 'MAINLAND') {
+                reasons.add('行政区划：' + decision.regionCode + '（根据省份、城市规则；直辖市区县使用直辖市编码）');
+                if (decision.isMilitary) {
+                    reasons.add('客户分类：军队相关单位；军事行业：' + decision.militaryIndustryCode);
+                    Map<String,String> branches = new Map<String,String>{'01'=>'陆军','02'=>'海军','03'=>'空军','04'=>'战略支援/军事航天/网络空间','05'=>'火箭军','06'=>'联勤保障','07'=>'武警/公安警察体系'};
+                    reasons.add('军种：' + branches.get(decision.branchCode) + '（' + decision.branchCode + '）；WH 表示军事医疗');
+                } else reasons.add('行业：' + value.Industry + ' → ' + decision.industryCode);
+                reasons.add('编码结构：地区前缀 + 行政区划 + 行业/军种 + 流水号 + 组织状态 + 校验位');
+            } else {
+                reasons.add('地区类别：' + decision.territory);
+                reasons.add('编码结构：地区前缀' + (decision.territory == 'FOREIGN' ? ' + 国家码 ' + decision.countryCode : '')
+                    + (generated.sequenceValue == null ? ' + 商业登记号码' : ' + 流水号') + ' + 校验位');
+            }
+            reasons.add(generated.sequenceValue == null ? '号码来源：客户商业登记号码（保留前导零）'
+                : '流水号：' + String.valueOf(generated.sequenceValue).leftPad(4, '0') + '（独立序列 ' + decision.sequenceCategory + '，尚未占用）');
+            reasons.add('编码主体：' + generated.codeBody + '；末位校验码：' + generated.finalCode.right(1));
+            result.explanation = String.join(reasons, '\n');
+        } catch (Exception error) {
+            result.error = error.getMessage();
+        }
+        return result;
+    }
+
+    public class InternalPreview {
+        @AuraEnabled public String finalCode;
+        @AuraEnabled public String error;
+        @AuraEnabled public Boolean needsConfirmation;
+        @AuraEnabled public String militaryIndustryCode;
+        @AuraEnabled public String branchCode;
+        @AuraEnabled public String regionCode;
+        @AuraEnabled public String sequenceCategory;
+        @AuraEnabled public String explanation;
     }
 
     @AuraEnabled

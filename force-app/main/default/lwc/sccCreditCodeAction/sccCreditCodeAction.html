@@ -35,7 +35,7 @@
                             <template if:false={hasSources}><p>本次未返回可用来源链接，网上信用代码不能作为已核验结果采用。</p></template>
                         </div>
                         <div class={codeDecisionClass}>
-                            <div><strong>最终编码来源：{researchResult.codeSource}</strong></div>
+                            <div><strong>本次采用方式：{researchResult.codeSource}</strong></div>
                             <template if:true={researchResult.officialCodeRejectionReason}>
                                 <div>未采用网上代码的原因：{researchResult.officialCodeRejectionReason}</div>
                             </template>
@@ -46,8 +46,31 @@
                         <lightning-input label="行业候选" data-field="industry" value={researchResult.industry} onchange={handleResearchValue}></lightning-input>
                         <lightning-input label="商业登记号码候选" data-field="businessRegistrationNumber" value={researchResult.businessRegistrationNumber} onchange={handleResearchValue}></lightning-input>
                         <lightning-textarea label="查询说明" value={researchResult.notes} read-only></lightning-textarea>
+                        <template if:true={showInternal}>
+                            <section class="slds-box slds-m-vertical_medium">
+                                <h3 class="slds-text-heading_small">内部编码预览</h3>
+                                <p>资料未完全匹配时，请核对并补齐上方资料后勾选确认。已有客户资料仍优先保留。</p>
+                                <lightning-input type="checkbox" label="已人工核对上述资料，允许补充空字段并用于内部编码（不代表采用网上信用代码）" checked={confirmedForInternal} onchange={handleInternalConfirmation} disabled={busy}></lightning-input>
+                                <lightning-button label="校验资料并预览内部编码" onclick={handleInternalPreview} disabled={busy}></lightning-button>
+                                <template if:true={internalPreview}>
+                                    <template if:true={internalPreview.error}>
+                                        <p role="alert" class="slds-text-color_error">暂时不能生成：{internalPreview.error}</p>
+                                        <p>请补齐或确认资料后重新预览。</p>
+                                        <template if:true={internalPreview.militaryIndustryCode}><p>已识别军事行业：{internalPreview.militaryIndustryCode}（WH＝军事医疗）</p></template>
+                                        <template if:true={internalPreview.branchCode}><p>已识别军种代码：{internalPreview.branchCode}（03＝空军）</p></template>
+                                    </template>
+                                    <template if:true={internalPreview.needsConfirmation}><p>候选资料尚未确认；当前仅用客户已保存的资料校验。</p></template>
+                                    <template if:true={internalPreview.finalCode}>
+                                        <p class="slds-text-heading_medium">预览编码：{internalPreview.finalCode}</p>
+                                        <h4 class="slds-m-top_small"><strong>这个编码是怎样生成的？</strong></h4>
+                                        <lightning-formatted-text value={internalPreview.explanation}></lightning-formatted-text>
+                                        <p>预览不占流水号。确认生成时才正式取号，最终编码可能因其他用户取号而变化。</p>
+                                    </template>
+                                </template>
+                            </section>
+                        </template>
                         <div class="actions">
-                            <lightning-button variant="brand" label={generationButtonLabel} onclick={handleGenerate} disabled={busy}></lightning-button>
+                            <lightning-button variant="brand" label={generationButtonLabel} onclick={handleGenerate} disabled={generationDisabled}></lightning-button>
                         </div>
                     </template>
                 </lightning-tab>

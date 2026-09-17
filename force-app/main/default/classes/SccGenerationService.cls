@@ -2,6 +2,14 @@ public without sharing class SccGenerationService {
     private SccGenerationService() {}
 
     public static Result generate(SccRuleEngine.Context context, Id accountId) {
+        return build(context, accountId, true);
+    }
+
+    public static Result preview(SccRuleEngine.Context context) {
+        return build(context, null, false);
+    }
+
+    private static Result build(SccRuleEngine.Context context, Id accountId, Boolean allocate) {
         SccRuleEngine.Decision decision = SccRuleEngine.resolve(context);
         Result result = new Result();
         result.sequenceCategory = decision.sequenceCategory;
@@ -28,10 +36,20 @@ public without sharing class SccGenerationService {
             String registrationNumber = normalizeRegistrationNumber(context.businessRegistrationNumber);
             result.codeBody = prefix + registrationNumber;
         } else {
-            SccSequenceService.IssuedSequence issued = SccSequenceService.issue(
-                decision.sequenceCategory,
-                accountId
-            );
+            SccSequenceService.IssuedSequence issued;
+            if (allocate) {
+                issued = SccSequenceService.issue(decision.sequenceCategory, accountId);
+            } else {
+                List<CreditCodeSequence__c> counters = [SELECT NextSeq__c FROM CreditCodeSequence__c
+                    WHERE Category__c = :decision.sequenceCategory LIMIT 1];
+                if (counters.isEmpty() || counters[0].NextSeq__c == null
+                    || counters[0].NextSeq__c < 1 || counters[0].NextSeq__c > 9999) {
+                    throw new GenerationException('序列配置缺失或已用尽：' + decision.sequenceCategory);
+                }
+                issued = new SccSequenceService.IssuedSequence();
+                issued.value = counters[0].NextSeq__c.intValue();
+                issued.fourDigitValue = String.valueOf(issued.value).leftPad(4, '0');
+            }
             result.sequenceValue = issued.value;
             if (new Set<String>{'HONG_KONG','MACAU','TAIWAN'}.contains(decision.territory)) {
                 result.codeBody = prefix + issued.fourDigitValue;

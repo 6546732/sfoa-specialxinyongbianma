@@ -58,8 +58,7 @@ public without sharing class SccRuleEngine {
         return result;
     }
 
-    @TestVisible
-    private static String classifyTerritory(String country, String state) {
+    public static String classifyTerritory(String country, String state) {
         String joined = normalize(country) + '|' + normalize(state);
         if (containsAny(joined, new List<String>{'台湾', '臺灣', 'TAIWAN'})
             || isCode(country, state, new Set<String>{'TW'})) return 'TAIWAN';

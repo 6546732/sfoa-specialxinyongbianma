@@ -4,6 +4,7 @@ import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { notifyRecordUpdateAvailable } from 'lightning/uiRecordApi';
 import loadAccount from '@salesforce/apex/SccActionController.loadAccount';
 import research from '@salesforce/apex/SccActionController.research';
+import previewInternal from '@salesforce/apex/SccActionController.previewInternal';
 import generateFromResearch from '@salesforce/apex/SccActionController.generateFromResearch';
 import saveManual from '@salesforce/apex/SccActionController.saveManual';
 import preview from '@salesforce/apex/SccManualCodeService.preview';
@@ -17,6 +18,31 @@ export default class SccCreditCodeAction extends LightningElement {
     replacementReason = '';
     busy = false;
     researching = false;
+    internalPreview;
+    confirmedForInternal = false;
+
+    get showInternal() { return this.researchResult && !this.researchResult.officialCodeAccepted; }
+    get generationDisabled() { return this.busy || (this.showInternal && !this.internalPreview?.finalCode); }
+    get internalSelectionJson() {
+        return JSON.stringify({ ...this.researchResult, confirmedForInternal: this.confirmedForInternal });
+    }
+
+    async handleInternalPreview() {
+        this.internalPreview = null;
+        this.busy = true;
+        const selectionJson = this.internalSelectionJson;
+        try {
+            const result = await previewInternal({ accountId: this.recordId, auditId: this.researchResult.auditId, selectionJson });
+            if (selectionJson === this.internalSelectionJson) this.internalPreview = result;
+        } catch (error) {
+            this.toast('无法预览内部编码', this.message(error), 'error');
+        } finally { this.busy = false; }
+    }
+
+    handleInternalConfirmation(event) {
+        this.confirmedForInternal = event.target.checked;
+        this.internalPreview = null;
+    }
 
     @api
     set recordId(value) {
@@ -104,6 +130,8 @@ export default class SccCreditCodeAction extends LightningElement {
 
     handleResearchValue(event) {
         this.researchResult = { ...this.researchResult, [event.target.dataset.field]: event.detail.value };
+        this.internalPreview = null;
+        this.confirmedForInternal = false;
     }
 
     async handlePreview() {
@@ -140,10 +168,13 @@ export default class SccCreditCodeAction extends LightningElement {
         this.busy = true;
         this.researching = true;
         this.researchResult = null;
+        this.internalPreview = null;
+        this.confirmedForInternal = false;
         try {
             this.researchResult = await research({ accountId: this.recordId });
             await notifyRecordUpdateAvailable([{ recordId: this.recordId }]);
             await this.refreshAccount();
+            if (this.showInternal) await this.handleInternalPreview();
         } catch (error) {
             this.toast('联网查询失败', this.message(error), 'error');
         } finally {
@@ -159,7 +190,7 @@ export default class SccCreditCodeAction extends LightningElement {
                 accountId: this.recordId,
                 auditId: this.researchResult.auditId,
                 selection: null,
-                selectionJson: null,
+                selectionJson: this.internalSelectionJson,
                 identityConfirmed: Boolean(this.researchResult.identityConfirmed),
                 billingCountry: this.researchResult.billingCountry,
                 billingState: this.researchResult.billingState,

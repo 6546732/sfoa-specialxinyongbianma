@@ -2,6 +2,8 @@
 
 ## 2026-09-10 当前实现与打包准则
 
+2026-09-17 补充：未完全匹配的联网资料默认不写入。用户可在结果界面明确勾选人工核对，仅用于补空字段及内部编码；该确认不得放宽官方信用代码的全名匹配要求。内部编码预览只读取序列，不锁号、不增号，正式生成仍通过 FOR UPDATE 取号。
+
 本节与 `force-app` 实际源码、`docs/INSTALLATION.md` 是当前交接说明；以下编号1至18节保留为历史背景，其旧类名、待确认事项与本节冲突时不适用。用户最新明确指令优先。
 
 - 当前是 SccActionController、SccDeepSeekClient、SccRuleEngine、SccGenerationService、SccSequenceService、SccCodeGenerator、SccManualCodeService、SccConstants 八个业务类及六个测试类；不使用历史批处理类，也没有本模块 Account Trigger。
