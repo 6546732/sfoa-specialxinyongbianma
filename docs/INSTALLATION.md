@@ -1,8 +1,8 @@
 # 客户编码软件包安装说明
 
-## 下一版本：地址补全与批量入口（待发布）
+## 0.3：地址补全与批量入口
 
-新增客户地址补全对象、触发器、队列及“客户省市批量补全”标签页。目标组织需已有 Account.jingyingfanwei__c 经营范围字段。给指定操作者分配 SccAddressBulkAdmin、SccAddressAuditViewer，并核对客户省市编辑权限、输入字段读取权限及联网凭据主体权限。操作见 ADDRESS-BULK.md，上传最多300条ID，安装本身不扫描历史客户。保留请求去重键及输入指纹字段，可从记录页隐藏，不能直接删除。下面0.2版本组件清单不包含这些新增功能，实际发布版本以 RELEASE.md 为准。
+新增客户地址补全对象、触发器、队列及“客户省市批量补全”标签页。目标组织需已有 Account.jingyingfanwei__c 经营范围字段。给指定操作者分配 SccAddressBulkAdmin、SccAddressAuditViewer，并核对客户省市编辑权限、输入字段读取权限及联网凭据主体权限。操作见 ADDRESS-BULK.md，上传最多300条ID，安装本身不扫描历史客户。保留请求去重键及输入指纹字段，可从记录页隐藏，不能直接删除。生产升级步骤见 UPGRADE-0.3.md，正式发布状态及安装链接以 RELEASE.md 为准。
 
 ## 2026-09-17 最新发布方式
 
@@ -14,18 +14,20 @@
 
 联网主体未匹配时不自动补写。用户可明确确认资料用于内部编码；官方信用代码仍须全名完全匹配。内部编码预览不占号，最终保存才取号。
 
-本模块以 zihao 沙盒已运行的 Scc 代码为源，软件包名称为 `code`。安装链接和版本状态见 `RELEASE.md`。
+本模块以 zihao 沙盒已运行的 Scc 代码为源，软件包名称为 `SmartX Customer Credit Code`。安装链接和版本状态见 `RELEASE.md`。
 
 ## 包内组件
 
 | 组件 | 数量/内容 |
 |---|---|
-| Apex 类 | 14 个，包含 8 个业务类和 6 个测试类 |
-| 页面组件 | sccCreditCodeAction |
+| Apex 类 | 22 个，包含 13 个业务类和 9 个测试类 |
+| 页面组件 | sccCreditCodeAction、sccAddressBulk |
+| 地址触发器 | SccAccountAddress |
+| 标签页 | SccAddressLookup__c、SccAddressBulk |
 | 客户快速操作 | Account.Generate_Credit_Code |
-| 权限集 | Scc_Credit_Code_User、Scc_Credit_Code_Admin |
-| 自定义权限 | 生成编码、替换已有编码 |
-| 业务对象 | CreditCodeSequence__c、CreditCodeGeneration__c 及字段 |
+| 权限集 | Scc_Credit_Code_User、Scc_Credit_Code_Admin、SccAddressBulkAdmin、SccAddressAuditViewer |
+| 自定义权限 | 生成编码、替换已有编码、批量补全省市 |
+| 业务对象 | CreditCodeSequence__c、CreditCodeGeneration__c、SccAddressLookup__c 及字段 |
 | 客户字段 | Account.Business_Registration_Number__c（文本50位）、Account.xinyongdaima__c（文本255位） |
 | 自定义元数据类型 | 地区、行业、军事、国家、组织状态、地区格式，共6种及字段 |
 | 自定义元数据记录 | 地区369、行业20、军事35、国家4、状态2、格式6，共436条 |
@@ -66,13 +68,9 @@
 - 换码需要专用权限，换码原因选填。
 - 军事元数据先匹配；没有匹配时执行原有关键词和 AI 分类兼容逻辑。
 - 组织状态页面默认存续；注册中尚无页面选择，废弃客户仅有格式规则。
-- 非托管包不提供常规版本升级机制。后续修订应管理源码差异，不要通过卸载重装来保留业务数据。
+- 本解锁包支持版本升级；不要通过卸载重装来更新。
 - 卸载前导出序列和审计记录并评估字段删除影响，尤其是包内客户编码与登记号码字段。
 
 ## 重新构建
 
-先运行 `python scripts/build-package-manifest.py` 校验记录数量并生成显式清单。
-
-将源格式转换为 Metadata API 格式后，以 `manifest/unmanaged-code.xml` 替换转换输出根目录的 package.xml，再先 dry-run、运行六个测试类，确认后部署至指定沙盒的 `code` 包。该清单的 fullName 用于维护非托管包容器；普通部署使用无 fullName 的 `manifest/package.xml`。
-
-上传使用 `sf package1 version create`，目标为源沙盒，package-id 为包的 033 开头 ID，不传 managed-released 参数。本仓库不需要也不配置 Dev Hub。
+使用 `scripts/build-package-manifest.py` 校验源码清单。按 sfdx-project.json 在 smartxDevHub 创建2GP org-dependent解锁版本，先在 zihao 升级并运行全部9个测试类，通过后 promote 为正式版本。不要使用历史 package1 或 unmanaged-code 清单发布本包。

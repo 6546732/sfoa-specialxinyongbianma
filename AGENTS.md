@@ -1,5 +1,9 @@
 # Salesforce 特殊客户编码项目交接说明
 
+## 2026-09-22 软件包正式发布
+
+0.3.0.1（04tC8000000RIbxIAG）已创建、在zihao升级验证并promote。9类64项测试通过，本次覆盖率91%。包含编码、地址补全、批量ID入口和处理原因。生产未安装，用户手动安装，说明见docs/UPGRADE-0.3.md和docs/RELEASE.md；生产调度脚本仅供手动执行。
+
 ## 2026-09-22 处理原因分类
 
 新增地址审计 Reason__c 受限选项列表，由 Handler/Job 按明确执行分支写入；Detail__c 仍是长文本详情。新增 Address_Results 列表视图及批量页面原因筛选排序，查看权限加入 SccAddressAuditViewer。历史记录不自动猜测回填。发布时包含 manifest/address-reason.xml 的组件。

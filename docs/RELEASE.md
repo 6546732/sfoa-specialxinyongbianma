@@ -1,3 +1,24 @@
+# 正式解锁包版本：0.3.0.1（2026-09-22）
+
+- 名称：SmartX Customer Credit Code
+- 类型：2GP 解锁包，无命名空间，依赖目标组织
+- 包 ID：0HoC800000008wrKAA
+- 安装版本：04tC8000000RIbxIAG，IsReleased=true，ValidationSkipped=false
+- 创建请求：08cC8000000IJ93IAG，Success
+- 子豪沙盒升级请求：0HfC50000000bxFKAQ，SUCCESS（保留组件模式）
+- 包版本：05iC80000003quvIAA
+- 生产环境未安装，由用户手动操作
+
+[生产环境安装/升级链接](https://smartx.my.sfcrmproducts.cn/packaging/installPackage.apexp?p0=04tC8000000RIbxIAG)
+
+本版包含原客户编码功能及省/市任一缺失时的自动补全、街道优先与联网兜底、最多300条客户ID上传、任务进度与来源、处理原因选项及筛选排序。经营范围须非空；不覆盖现有省市，不自动扫描历史客户。历史处理原因未回填。
+
+包已在 zihao 实际升级，9个测试类共64项全部通过，本次测试覆盖率91%（不是全组织覆盖率）。测试运行707C500000NlROO。后台四个调度已恢复。org-dependent包报告不计算包内覆盖率；上述为沙盒实际测试结果。
+
+手动安装及配置见 [UPGRADE-0.3.md](UPGRADE-0.3.md)。选择“仅为管理员安装”，分配批量及审计查看权限，并核对经营范围字段、联网凭据及生产规则。不要卸载旧版或重置序列。生产初始化调度脚本已提供但未执行。未在生产环境安装或运行300个真实客户。
+
+---
+
 # 正式解锁包版本：0.2.0.1（2026-09-17）
 
 - 名称：SmartX Customer Credit Code
