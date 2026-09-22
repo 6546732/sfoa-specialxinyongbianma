@@ -3,7 +3,8 @@ public without sharing class SccAddressHandler {
     private static Boolean dispatched = false;
 
     public static Boolean eligible(Account value) {
-        return String.isBlank(value.BillingState) && String.isNotBlank((String)value.get('jingyingfanwei__c'));
+        return (String.isBlank(value.BillingState) || String.isBlank(value.BillingCity))
+            && String.isNotBlank((String)value.get('jingyingfanwei__c'));
     }
 
     public static String fingerprint(Account value) {

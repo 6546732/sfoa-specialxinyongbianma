@@ -12,7 +12,7 @@ private class SccAddressBulkControllerTest {
     }
     @IsTest static void previewDoesNotEnqueueAndFiltersInput() {
         List<Account> values=fixtures(3);
-        values[1].BillingState='上海市'; values[2].put('jingyingfanwei__c',null); update values;
+        values[1].BillingState='上海市'; values[1].BillingCity='上海市'; values[2].put('jingyingfanwei__c',null); update values;
         Integer beforeCount=[SELECT COUNT() FROM SccAddressLookup__c];
         List<SccAddressBulkController.Row> rows=SccAddressBulkController.preview('Id\n"'+values[0].Id+'"\n'+values[0].Id+'\n'+values[1].Id+'\n'+values[2].Id+'\nBAD\n'+UserInfo.getUserId());
         System.assertEquals(6,rows.size()); System.assertEquals('READY',rows[0].status);
@@ -57,7 +57,7 @@ private class SccAddressBulkControllerTest {
     @IsTest static void submitRechecksEligibilityAfterPreview() {
         Account a=fixtures(1)[0]; String csv=String.valueOf(a.Id);
         System.assertEquals('READY',SccAddressBulkController.preview(csv)[0].status);
-        a.BillingState='浙江省'; update a;
+        a.BillingState='浙江省'; a.BillingCity='杭州市'; update a;
         System.assertEquals('SKIPPED',SccAddressBulkController.submit(csv)[0].status);
         System.assertEquals('浙江省',[SELECT BillingState FROM Account WHERE Id=:a.Id].BillingState);
     }

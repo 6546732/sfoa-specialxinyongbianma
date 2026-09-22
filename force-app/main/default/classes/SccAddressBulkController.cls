@@ -66,7 +66,7 @@ public with sharing class SccAddressBulkController {
         for (Account account : accounts) {
             Row row=byId.get(account.Id); row.name=account.Name;
             if (!editable.contains(account.Id)) row.detail='没有此客户的编辑权限';
-            else if (String.isNotBlank(account.BillingState)) row.detail='已有开单省份，不覆盖';
+            else if (String.isNotBlank(account.BillingState) && String.isNotBlank(account.BillingCity)) row.detail='开单省市已完整，不覆盖';
             else if (!SccAddressHandler.eligible(account)) row.detail='经营范围为空，不满足处理条件';
             else {
                 row.status='READY'; row.detail=String.isBlank(account.BillingStreet)

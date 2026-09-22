@@ -2,7 +2,7 @@
     <lightning-card title="客户省市批量补全" icon-name="standard:address">
         <div class="slds-p-around_medium">
             <p>上传单列 UTF-8 CSV，表头为 Id，每行一个15或18位客户ID，每次最多300条。上传后先检查，再点击开始处理。</p>
-            <p class="slds-m-top_small">仅处理经营范围非空且开单省份为空的客户。优先识别街道；街道为空或无法识别时按客户名称联网查询。只补空省市，不生成或修改客户编码。</p>
+            <p class="slds-m-top_small">仅处理经营范围非空且开单省份或城市为空的客户。优先识别街道；街道为空或无法识别时按客户名称联网查询。只补空省市，不生成或修改客户编码。</p>
             <lightning-input type="file" label="上传客户ID文件" accept=".csv,.txt" onchange={upload} disabled={busy}></lightning-input>
             <div class="slds-m-vertical_small">
                 <lightning-button label="开始处理符合条件的客户" variant="brand" onclick={start} disabled={submitDisabled}></lightning-button>

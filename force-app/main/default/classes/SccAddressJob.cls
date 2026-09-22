@@ -45,13 +45,13 @@ public without sharing class SccAddressJob implements Queueable, Database.Allows
         try {
             List<Account> records = loadAccount(audit.Account__c, false);
             if (records.isEmpty() || !unchanged(records[0], audit)) {
-                finish(audit,'SKIPPED','客户资料已变化、已补省份或经营范围为空'); return;
+                finish(audit,'SKIPPED','客户资料已变化、省市已完整或经营范围为空'); return;
             }
             Account original = records[0];
             SccAddressResolver.Match match = SccAddressResolver.resolve(original.BillingStreet);
             String method = 'STREET';
             Boolean matchedByRename = false;
-            if (String.isBlank(match.province)) {
+            if (String.isBlank(match.province) || (String.isBlank(original.BillingCity) && String.isBlank(match.city))) {
                 method = 'WEB';
                 audit.Method__c=method;
                 SccDeepSeekClient.ResearchResult result = SccDeepSeekClient.researchAddress(original);
@@ -82,6 +82,12 @@ public without sharing class SccAddressJob implements Queueable, Database.Allows
             }
             audit.Method__c=method;
             if (String.isBlank(match.province)) { finish(audit,'NO_MATCH',match.reason); return; }
+            if (String.isNotBlank(original.BillingState)) {
+                SccAddressResolver.Match existingProvince=SccAddressResolver.validatePair(original.BillingState,null);
+                if (existingProvince.province != match.province) {
+                    finish(audit,'NO_MATCH','识别结果与客户已有省份冲突或已有省份无法核验'); return;
+                }
+            }
             // Existing city is authoritative. A conflict must never be silently filled around.
             if (String.isNotBlank(original.BillingCity)) {
                 SccAddressResolver.Match existing = SccAddressResolver.validatePair(match.province, original.BillingCity);
@@ -97,7 +103,8 @@ public without sharing class SccAddressJob implements Queueable, Database.Allows
             if (current.isEmpty() || !unchanged(current[0], audit)) {
                 finish(audit,'SKIPPED','查询期间客户资料已变化，未写入过期结果'); return;
             }
-            Account patch = new Account(Id=original.Id, BillingState=match.province);
+            Account patch = new Account(Id=original.Id);
+            if (String.isBlank(current[0].BillingState)) patch.BillingState=match.province;
             if (String.isBlank(current[0].BillingCity) && String.isNotBlank(match.city)) patch.BillingCity=match.city;
             Database.update(patch, AccessLevel.SYSTEM_MODE);
             audit.Province__c=match.province; audit.City__c=match.city;

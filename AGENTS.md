@@ -6,7 +6,7 @@
 
 ## 2026-09-22 开单地址补全（优先于旧文的无 Account Trigger 约定）
 
-用户已授权实现并部署 zihao：经营范围 `Account.jingyingfanwei__c` 非空、BillingState为空时，客户新建或相关字段变化触发地址补全。复用369条 `SccRegionRule__mdt`；街道不能可靠识别才异步调用 DeepSeek。只补空省市，不修改编码或批量处理历史客户。新增 `SccAccountAddress`、`SccAddressHandler`、`SccAddressResolver`、`SccAddressJob`、`SccAddressSweep` 及审计/持久化请求对象 `SccAddressLookup__c`，详见 docs/ADDRESS-ENRICHMENT.md 和 manifest/address-enrichment.xml。生产环境没有授权部署本次地址功能。
+用户已授权实现并部署 zihao：经营范围 `Account.jingyingfanwei__c` 非空、BillingState或BillingCity任一为空时，客户新建或相关字段变化触发地址补全。复用369条 `SccRegionRule__mdt`；街道不能可靠识别才异步调用 DeepSeek。只补空省市，不修改编码或批量处理历史客户。新增 `SccAccountAddress`、`SccAddressHandler`、`SccAddressResolver`、`SccAddressJob`、`SccAddressSweep` 及审计/持久化请求对象 `SccAddressLookup__c`，详见 docs/ADDRESS-ENRICHMENT.md 和 manifest/address-enrichment.xml。生产环境没有授权部署本次地址功能。
 
 地址补全支持括号行政地名、直辖市的“市辖区”旧值；联网可接受明确曾用全名及更名来源证明的同一主体，仅用于省市，不放宽官方信用代码匹配。Responses 必须优先取 final_answer，跳过 commentary/空白消息。终态请求不能永久占用去重键，用户再次清空已补省份可以触发新请求。
 

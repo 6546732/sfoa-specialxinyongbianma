@@ -86,7 +86,7 @@ private class SccAddressJobTest {
         values[0].BillingStreet='北京市海淀区'; update values[0];
         System.assertEquals(201,[SELECT COUNT() FROM SccAddressLookup__c]);
         insert new Account(Name='经营范围为空');
-        Account populated=new Account(Name='已有省份',BillingState='广东省');
+        Account populated=new Account(Name='已有省市',BillingState='广东省',BillingCity='深圳市');
         populated.put('jingyingfanwei__c','软件开发'); insert populated;
         System.assertEquals(201,[SELECT COUNT() FROM SccAddressLookup__c]);
     }
@@ -114,6 +114,24 @@ private class SccAddressJobTest {
         SccAddressHandler.pauseDispatch=true;
         new SccAddressSweep().execute(null);
         System.assertEquals(0,[SELECT COUNT() FROM SccAddressLookup__c]);
+    }
+    @IsTest static void fillsCityFromStreetPreservingProvince() { cityOnly('广东省深圳市南山区','广东','STREET','COMPLETED'); }
+    @IsTest static void fillsCityWithWebWhenStreetEmpty() { cityOnly(null,'广东省','WEB','COMPLETED'); }
+    @IsTest static void queriesWebWhenStreetHasOnlyProvince() { cityOnly('广东省','广东省','WEB','COMPLETED'); }
+    @IsTest static void rejectsExistingProvinceConflict() { cityOnly('广东省深圳市南山区','浙江省','STREET','NO_MATCH'); }
+    private static void cityOnly(String street,String province,String method,String status) {
+        SccAddressHandler.pauseDispatch=true;
+        Account a=new Account(Name='仅缺城市测试',BillingState=province,BillingStreet=street,BillingCountry='中国');
+        a.put('jingyingfanwei__c','软件开发'); insert a;
+        Test.setMock(HttpCalloutMock.class,new AddressMock('success',a.Id));
+        Id request=running(a.Id);
+        Test.startTest(); SccAddressJob.process(request); Test.stopTest();
+        Account actual=[SELECT BillingState,BillingCity FROM Account WHERE Id=:a.Id];
+        System.assertEquals(province,actual.BillingState,'Never normalize or overwrite existing province.');
+        System.assertEquals(status=='COMPLETED'?'深圳市':null,actual.BillingCity);
+        System.assertEquals(status,audit(a.Id).Status__c);
+        System.assertEquals(method,audit(a.Id).Method__c);
+        System.assertEquals(1,[SELECT COUNT() FROM SccAddressLookup__c WHERE Account__c=:a.Id],'No recursive task after filling city.');
     }
     private class AddressMock implements HttpCalloutMock {
         String mode; Id accountId;
