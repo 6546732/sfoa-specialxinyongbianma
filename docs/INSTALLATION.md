@@ -1,5 +1,9 @@
 # 客户编码软件包安装说明
 
+## 下一版本：地址补全与批量入口（待发布）
+
+新增客户地址补全对象、触发器、队列及“客户省市批量补全”标签页。目标组织需已有 Account.jingyingfanwei__c 经营范围字段。给指定操作者分配 SccAddressBulkAdmin、SccAddressAuditViewer，并核对客户省市编辑权限、输入字段读取权限及联网凭据主体权限。操作见 ADDRESS-BULK.md，上传最多300条ID，安装本身不扫描历史客户。保留请求去重键及输入指纹字段，可从记录页隐藏，不能直接删除。下面0.2版本组件清单不包含这些新增功能，实际发布版本以 RELEASE.md 为准。
+
 ## 2026-09-17 最新发布方式
 
 当前使用 **SmartX Customer Credit Code 2GP 解锁软件包**。原非托管 `code` 路径因组件归属冲突停止使用；下文非托管安装和重新构建章节仅保留历史参考，不应执行。新版本使用仓库 sfdx-project.json 的包 ID，由 smartxDevHub 创建和发布；安装链接及验证结果见 RELEASE.md。

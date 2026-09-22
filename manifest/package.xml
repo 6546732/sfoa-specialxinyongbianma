@@ -3,6 +3,14 @@
   <types>
     <members>SccActionController</members>
     <members>SccActionControllerTest</members>
+    <members>SccAddressBulkController</members>
+    <members>SccAddressBulkControllerTest</members>
+    <members>SccAddressHandler</members>
+    <members>SccAddressJob</members>
+    <members>SccAddressJobTest</members>
+    <members>SccAddressResolver</members>
+    <members>SccAddressResolverTest</members>
+    <members>SccAddressSweep</members>
     <members>SccCodeGenerator</members>
     <members>SccCodeGeneratorTest</members>
     <members>SccConstants</members>
@@ -20,6 +28,7 @@
   <types>
     <members>CreditCodeGeneration__c</members>
     <members>CreditCodeSequence__c</members>
+    <members>SccAddressLookup__c</members>
     <members>SccCountryRule__mdt</members>
     <members>SccIndustryRule__mdt</members>
     <members>SccMilitaryRule__mdt</members>
@@ -48,6 +57,15 @@
     <members>CreditCodeSequence__c.LastIssuedAccount__c</members>
     <members>CreditCodeSequence__c.LastIssuedAt__c</members>
     <members>CreditCodeSequence__c.NextSeq__c</members>
+    <members>SccAddressLookup__c.Account__c</members>
+    <members>SccAddressLookup__c.City__c</members>
+    <members>SccAddressLookup__c.Detail__c</members>
+    <members>SccAddressLookup__c.Fingerprint__c</members>
+    <members>SccAddressLookup__c.Method__c</members>
+    <members>SccAddressLookup__c.Province__c</members>
+    <members>SccAddressLookup__c.RequestKey__c</members>
+    <members>SccAddressLookup__c.Sources__c</members>
+    <members>SccAddressLookup__c.Status__c</members>
     <members>SccCountryRule__mdt.Active__c</members>
     <members>SccCountryRule__mdt.Aliases__c</members>
     <members>SccCountryRule__mdt.CountryName__c</members>
@@ -524,6 +542,16 @@
     <name>CustomMetadata</name>
   </types>
   <types>
+    <members>SccAccountAddress</members>
+    <name>ApexTrigger</name>
+  </types>
+  <types>
+    <members>SccAddressBulk</members>
+    <members>SccAddressLookup__c</members>
+    <name>CustomTab</name>
+  </types>
+  <types>
+    <members>sccAddressBulk</members>
     <members>sccCreditCodeAction</members>
     <name>LightningComponentBundle</name>
   </types>
@@ -532,11 +560,14 @@
     <name>QuickAction</name>
   </types>
   <types>
+    <members>SccAddressAuditViewer</members>
+    <members>SccAddressBulkAdmin</members>
     <members>Scc_Credit_Code_Admin</members>
     <members>Scc_Credit_Code_User</members>
     <name>PermissionSet</name>
   </types>
   <types>
+    <members>Scc_Bulk_Address</members>
     <members>Scc_Generate_Credit_Code</members>
     <members>Scc_Replace_Existing_Code</members>
     <name>CustomPermission</name>

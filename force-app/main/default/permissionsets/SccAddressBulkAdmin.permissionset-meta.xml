@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+<classAccesses><apexClass>SccAddressBulkController</apexClass><enabled>true</enabled></classAccesses>
+<customPermissions><enabled>true</enabled><name>Scc_Bulk_Address</name></customPermissions>
+<description>指定客户ID批量补全省市。还需客户及开单省市编辑权限、相关字段读取权限和联网凭据主体权限。搭配客户地址补全记录查看权限集。</description>
+<label>客户地址批量补全管理员</label>
+<tabSettings><tab>SccAddressBulk</tab><visibility>Visible</visibility></tabSettings>
+</PermissionSet>

@@ -19,17 +19,19 @@ groups = {
     'ListView': [p.parent.parent.name + '.' + p.name.removesuffix('.listView-meta.xml')
                  for p in (SOURCE / 'objects').glob('*/listViews/*.listView-meta.xml')],
     'CustomMetadata': [p.name.removesuffix('.md-meta.xml') for p in (SOURCE / 'customMetadata').glob('*.md-meta.xml')],
-    'LightningComponentBundle': ['sccCreditCodeAction'],
+    'ApexTrigger': [p.name.removesuffix('.trigger') for p in (SOURCE / 'triggers').glob('Scc*.trigger')],
+    'CustomTab': [p.name.removesuffix('.tab-meta.xml') for p in (SOURCE / 'tabs').glob('*.tab-meta.xml')],
+    'LightningComponentBundle': [p.name for p in (SOURCE / 'lwc').iterdir() if p.is_dir()],
     'QuickAction': ['Account.Generate_Credit_Code'],
-    'PermissionSet': ['Scc_Credit_Code_User', 'Scc_Credit_Code_Admin'],
-    'CustomPermission': ['Scc_Generate_Credit_Code', 'Scc_Replace_Existing_Code'],
+    'PermissionSet': [p.name.removesuffix('.permissionset-meta.xml') for p in (SOURCE / 'permissionsets').glob('*.permissionset-meta.xml')],
+    'CustomPermission': [p.name.removesuffix('.customPermission-meta.xml') for p in (SOURCE / 'customPermissions').glob('*.customPermission-meta.xml')],
 }
 counts = Counter(name.split('.')[0] for name in groups['CustomMetadata'])
 expected = {'SccRegionRule':369, 'SccIndustryRule':20, 'SccMilitaryRule':35,
             'SccCountryRule':4, 'SccOrganizationStatusRule':2, 'SccTerritoryRule':6}
 assert dict(counts) == expected, counts
-assert len(groups['ApexClass']) == 14
-assert len(groups['CustomObject']) == 8
+assert len(groups['ApexClass']) == 22
+assert len(groups['CustomObject']) == 9
 for path in SOURCE.rglob('*.xml'):
     ET.parse(path)
 

@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomTab xmlns="http://soap.sforce.com/2006/04/metadata"><label>客户省市批量补全</label><lwcComponent>sccAddressBulk</lwcComponent><motif>Custom23: Mail</motif></CustomTab>

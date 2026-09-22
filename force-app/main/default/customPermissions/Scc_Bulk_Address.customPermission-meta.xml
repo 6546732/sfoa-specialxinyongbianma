@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomPermission xmlns="http://soap.sforce.com/2006/04/metadata"><description>允许按指定客户ID提交省市补全任务及查看处理来源。</description><label>批量补全客户省市</label></CustomPermission>
