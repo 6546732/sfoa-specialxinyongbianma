@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata"><fullName>Account__c</fullName><label>客户</label><deleteConstraint>SetNull</deleteConstraint><referenceTo>Account</referenceTo><relationshipLabel>地址补全记录</relationshipLabel><relationshipName>AddressLookups</relationshipName><type>Lookup</type></CustomField>
+

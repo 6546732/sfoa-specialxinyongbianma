@@ -1,5 +1,9 @@
 # Salesforce 特殊客户编码项目交接说明
 
+## 2026-09-22 开单地址补全（优先于旧文的无 Account Trigger 约定）
+
+用户已授权实现并部署 zihao：经营范围 `Account.jingyingfanwei__c` 非空、BillingState为空时，客户新建或相关字段变化触发地址补全。复用369条 `SccRegionRule__mdt`；街道不能可靠识别才异步调用 DeepSeek。只补空省市，不修改编码或批量处理历史客户。新增 `SccAccountAddress`、`SccAddressHandler`、`SccAddressResolver`、`SccAddressJob`、`SccAddressSweep` 及审计/持久化请求对象 `SccAddressLookup__c`，详见 docs/ADDRESS-ENRICHMENT.md 和 manifest/address-enrichment.xml。生产环境没有授权部署本次地址功能。
+
 ## 2026-09-17 发布方式更正（优先于后文）
 
 使用既有 2GP 解锁包 SmartX Customer Credit Code，包 ID 0HoC800000008wrKAA，Dev Hub 别名 smartxDevHub。原非托管 code 包因组件已归属已安装解锁包无法收录全部组件，不再作为发布路径。开发测试仍在 zihao；用户授权使用 Dev Hub 创建、发布版本，生产安装由用户手动执行。仅打包源码及规则，不迁移客户记录、序列计数、审计数据或凭据。
