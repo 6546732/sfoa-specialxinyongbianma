@@ -1,6 +1,23 @@
 @IsTest
 private class SccDeepSeekClientTest {
     @IsTest
+    static void readsFinalAnswerAfterSearchCommentary() {
+        String payload=JSON.serialize(new Map<String,Object>{'identityConfirmed'=>true,'billingState'=>'上海市',
+            'billingCity'=>'上海市','sources'=>new List<Object>()});
+        List<Object> output=new List<Object>{
+            new Map<String,Object>{'type'=>'message','phase'=>'commentary','content'=>new List<Object>{new Map<String,Object>{'type'=>'output_text','text'=>'     '}}},
+            new Map<String,Object>{'type'=>'web_search_call','status'=>'completed'},
+            new Map<String,Object>{'type'=>'message','phase'=>'commentary','content'=>new List<Object>{new Map<String,Object>{'type'=>'output_text','text'=>'正在核实曾用名'}}},
+            new Map<String,Object>{'type'=>'message','phase'=>'final_answer','content'=>new List<Object>{
+                new Map<String,Object>{'type'=>'output_text','text'=>payload.substring(0,10)},
+                new Map<String,Object>{'type'=>'output_text','text'=>payload.substring(10)}}}
+        };
+        SccDeepSeekClient.ResearchResult result=SccDeepSeekClient.parseResponse(JSON.serialize(
+            new Map<String,Object>{'output_text'=>'  ','output'=>output}));
+        System.assertEquals('上海市',result.billingState);
+        System.assertEquals('上海市',result.billingCity);
+    }
+    @IsTest
     static void buildsChineseTraditionalAndJapaneseSearchNames() {
         List<String> values = SccDeepSeekClient.searchNameVariants('关东电化工业株式会社');
         System.assert(values.contains('关东电化工业株式会社'));

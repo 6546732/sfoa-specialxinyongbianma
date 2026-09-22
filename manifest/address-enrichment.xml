@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Package xmlns="http://soap.sforce.com/2006/04/metadata">
-<types><members>SccAddressResolver</members><members>SccAddressResolverTest</members><members>SccAddressHandler</members><members>SccAddressJob</members><members>SccAddressSweep</members><members>SccAddressJobTest</members><members>SccDeepSeekClient</members><name>ApexClass</name></types>
+<types><members>SccAddressResolver</members><members>SccAddressResolverTest</members><members>SccAddressHandler</members><members>SccAddressJob</members><members>SccAddressSweep</members><members>SccAddressJobTest</members><members>SccDeepSeekClient</members><members>SccDeepSeekClientTest</members><name>ApexClass</name></types>
 <types><members>SccAccountAddress</members><name>ApexTrigger</name></types>
 <types><members>SccAddressLookup__c</members><name>CustomObject</name></types>
 <types><members>SccAddressLookup__c</members><name>CustomTab</name></types>

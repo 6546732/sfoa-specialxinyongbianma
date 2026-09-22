@@ -5,6 +5,10 @@ private class SccAddressResolverTest {
         assertAddress('广东深圳南山区科技园', '广东省', '深圳市');
         assertAddress('深圳市南山区科技园', '广东省', '深圳市');
         assertAddress('中国 北京市海淀区中关村', '北京市', '北京市');
+        assertAddress('中国（上海）自由贸易试验区临港新片区云汉路979号2楼', '上海市', '上海市');
+        assertAddress('中国(上海)自由贸易试验区', '上海市', '上海市');
+        System.assertEquals('上海市', SccAddressResolver.validatePair('上海','市辖区').city);
+        System.assertEquals(null, SccAddressResolver.validatePair('江苏省','市辖区').province);
         assertAddress('广西壮族自治区南宁市青秀区', '广西壮族自治区', '南宁市');
         assertAddress('广西南宁青秀区', '广西壮族自治区', '南宁市');
         assertAddress('吉林市船营区', '吉林省', '吉林市');

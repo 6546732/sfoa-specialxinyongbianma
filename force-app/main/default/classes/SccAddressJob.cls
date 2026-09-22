@@ -50,17 +50,30 @@ public without sharing class SccAddressJob implements Queueable, Database.Allows
             Account original = records[0];
             SccAddressResolver.Match match = SccAddressResolver.resolve(original.BillingStreet);
             String method = 'STREET';
+            Boolean matchedByRename = false;
             if (String.isBlank(match.province)) {
                 method = 'WEB';
                 audit.Method__c=method;
                 SccDeepSeekClient.ResearchResult result = SccDeepSeekClient.researchAddress(original);
                 audit.Sources__c = JSON.serialize(result.sources);
                 audit.Detail__c = result.notes;
-                if (result.identityConfirmed != true || result.exactNameMatch != true
-                    || String.isBlank(result.matchedCompanyName)
-                    || !original.Name.trim().equalsIgnoreCase(result.matchedCompanyName.trim())
-                    || result.sources == null || result.sources.isEmpty()) {
-                    finish(audit,'NO_MATCH','联网未确认同一客户主体或缺少来源'); return;
+                if (String.isNotBlank(result.previousCompanyName)
+                    && original.Name.trim().equalsIgnoreCase(result.previousCompanyName.trim())
+                    && String.isNotBlank(result.matchedCompanyName)
+                    && String.isNotBlank(result.identityEvidenceSourceUrl) && result.sources != null) {
+                    for (SccDeepSeekClient.Source source : result.sources)
+                        if (source.url == result.identityEvidenceSourceUrl) matchedByRename = true;
+                }
+                List<String> rejected = new List<String>();
+                if (result.identityConfirmed != true) rejected.add('AI未确认是同一客户主体');
+                if (result.exactNameMatch != true && !matchedByRename) rejected.add('未确认登记全名匹配，且缺少更名证据');
+                if (String.isBlank(result.matchedCompanyName)) rejected.add('未返回登记企业全名');
+                else if (!original.Name.trim().equalsIgnoreCase(result.matchedCompanyName.trim()) && !matchedByRename)
+                    rejected.add('返回名称“' + result.matchedCompanyName + '”与客户名称“' + original.Name + '”不一致');
+                if (result.sources == null || result.sources.isEmpty()) rejected.add('未提供可核验来源');
+                if (!rejected.isEmpty()) {
+                    finish(audit,'NO_MATCH',String.join(rejected,'；')
+                        + (String.isBlank(result.notes) ? '' : '。查询说明：' + result.notes)); return;
                 }
                 if (String.isBlank(result.billingCity)) {
                     finish(audit,'NO_MATCH','联网未提供可验证的城市'); return;
@@ -88,7 +101,9 @@ public without sharing class SccAddressJob implements Queueable, Database.Allows
             if (String.isBlank(current[0].BillingCity) && String.isNotBlank(match.city)) patch.BillingCity=match.city;
             Database.update(patch, AccessLevel.SYSTEM_MODE);
             audit.Province__c=match.province; audit.City__c=match.city;
-            finish(audit,'COMPLETED',method == 'STREET' ? '根据开单街道和省市配置补齐空字段' : '根据联网来源及省市配置核验后补齐空字段');
+            finish(audit,'COMPLETED',method == 'STREET' ? '根据开单街道和省市配置补齐空字段'
+                : matchedByRename ? '根据联网更名证据确认同一主体，并通过省市配置核验后补齐空字段'
+                : '根据联网来源及省市配置核验后补齐空字段');
         } catch (Exception error) {
             finish(audit,'FAILED',error.getMessage());
         }

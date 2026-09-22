@@ -20,6 +20,8 @@ public without sharing class SccAddressResolver {
         String address = clean(street);
         if (address.startsWith('中华人民共和国')) address = address.substring(7);
         else if (address.startsWith('中国')) address = address.substring(2);
+        // Free-trade-zone addresses often begin with 中国（上海） or 中国(上海).
+        address = address.replaceFirst('^[（(]([^（）()]+)[）)]', '$1');
         Map<String, String> provinces = new Map<String, String>();
         Integer longest = 0;
         for (SccRegionRule__mdt rule : rules()) {
@@ -74,6 +76,9 @@ public without sharing class SccAddressResolver {
             if (!provinceAliases(rule.ProvinceName__c).contains(clean(province))) continue;
             matchingProvinces.add(rule.ProvinceName__c);
             if (String.isNotBlank(city) && cityAliases(rule).contains(clean(city))) matchingCities.add(rule.CityName__c);
+            if (clean(city) == '市辖区' && rule.ProvinceName__c == rule.CityName__c
+                && new Set<String>{'北京市','上海市','天津市','重庆市'}.contains(rule.ProvinceName__c))
+                matchingCities.add(rule.CityName__c);
         }
         if (matchingProvinces.size() != 1 || (String.isNotBlank(city) && matchingCities.size() != 1)) {
             result.reason = '省市不在现有配置中或对应关系不明确'; return result;

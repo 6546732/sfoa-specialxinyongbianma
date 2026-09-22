@@ -34,6 +34,22 @@ private class SccAddressJobTest {
         System.assertEquals('COMPLETED',audit(value.Id).Status__c);
         System.assert(audit(value.Id).Sources__c.contains('example.test'));
     }
+    @IsTest static void fillsFreeTradeZoneAndCanRetryAfterProvinceClearedAgain() {
+        Account value=customer('中国（上海）自由贸易试验区临港新片区云汉路979号2楼');
+        value.BillingCity='市辖区'; update value;
+        String hash=SccAddressHandler.fingerprint(value);
+        SccAddressLookup__c request=[SELECT Id,Status__c FROM SccAddressLookup__c
+            WHERE Account__c=:value.Id AND Fingerprint__c=:hash LIMIT 1];
+        request.Status__c='RUNNING'; update request;
+        SccAddressJob.process(request.Id);
+        Account actual=[SELECT Id,BillingState,BillingCity FROM Account WHERE Id=:value.Id];
+        System.assertEquals('上海市',actual.BillingState);
+        System.assertEquals('市辖区',actual.BillingCity,'Preserve the existing city value.');
+        System.assertEquals('STREET',[SELECT Method__c FROM SccAddressLookup__c WHERE Id=:request.Id].Method__c);
+        actual.BillingState=null; update actual;
+        System.assertEquals(2,[SELECT COUNT() FROM SccAddressLookup__c WHERE Account__c=:value.Id AND Fingerprint__c=:hash]);
+        System.assertEquals(1,[SELECT COUNT() FROM SccAddressLookup__c WHERE Account__c=:value.Id AND Fingerprint__c=:hash AND Status__c='PENDING']);
+    }
     @IsTest static void rejectsDifferentCompany() { runWeb('other','NO_MATCH'); }
     @IsTest static void rejectsMissingSources() { runWeb('noSource','NO_MATCH'); }
     @IsTest static void preservesConcurrentEdit() {
@@ -44,11 +60,15 @@ private class SccAddressJobTest {
     @IsTest static void recordsHttpFailure() { runWeb('http','FAILED'); }
     @IsTest static void recordsJsonFailure() { runWeb('json','FAILED'); }
     @IsTest static void rejectsResponseWithoutActualSearch() { runWeb('noSearch','FAILED'); }
+    @IsTest static void acceptsDocumentedRenameForAddressOnly() { runWeb('rename','COMPLETED'); }
+    @IsTest static void rejectsRenameWithoutEvidence() { runWeb('unprovenRename','NO_MATCH'); }
     private static Account runWeb(String mode,String expected) {
         Account value=customer('园区'+mode); Id job=running(value.Id);
         Test.setMock(HttpCalloutMock.class,new AddressMock(mode,value.Id));
         Test.startTest(); System.enqueueJob(new SccAddressJob(job)); Test.stopTest();
         System.assertEquals(expected,audit(value.Id).Status__c,audit(value.Id).Detail__c);
+        if (mode=='other') System.assert(audit(value.Id).Detail__c.contains('返回名称“另一客户”'));
+        if (mode=='noSource') System.assert(audit(value.Id).Detail__c.contains('未提供可核验来源'));
         return value;
     }
     @IsTest static void batchesAndDeduplicatesUnrelatedUpdates() {
@@ -109,6 +129,12 @@ private class SccAddressJobTest {
                 'matchedCompanyName'=>mode=='other'?'另一客户':[SELECT Name FROM Account WHERE Id=:accountId].Name,
                 'billingCountry'=>'中国','billingState'=>'广东省','billingCity'=>mode=='badPair'?'杭州市':'深圳市',
                 'sources'=>mode=='noSource'?new List<Object>():new List<Object>{new Map<String,Object>{'name'=>'公司官网','url'=>'https://example.test/address'}}};
+            if (mode=='rename' || mode=='unprovenRename') {
+                payload.put('previousCompanyName',payload.get('matchedCompanyName'));
+                payload.put('matchedCompanyName','地址补全测试企业新名称');
+                payload.put('exactNameMatch',false);
+                payload.put('identityEvidenceSourceUrl',mode=='rename'?'https://example.test/address':'');
+            }
             response.setBody(mode=='json'?'broken':JSON.serialize(new Map<String,Object>{'output_text'=>JSON.serialize(payload),
                 'output'=>mode=='noSearch'?new List<Object>():new List<Object>{new Map<String,Object>{'type'=>'web_search_call','status'=>'completed'}}}));
             return response;

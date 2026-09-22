@@ -24,10 +24,18 @@ public without sharing class SccAddressHandler {
         }
         if (pending.isEmpty()) return;
         Set<String> keys = pending.keySet();
+        List<SccAddressLookup__c> completedKeys = new List<SccAddressLookup__c>();
         for (SccAddressLookup__c existing : (List<SccAddressLookup__c>)Database.queryWithBinds(
-            'SELECT RequestKey__c FROM SccAddressLookup__c WHERE RequestKey__c IN :keys',
-            new Map<String,Object>{'keys'=>keys}, AccessLevel.SYSTEM_MODE))
-            pending.remove(existing.RequestKey__c);
+            'SELECT Id,RequestKey__c,Status__c FROM SccAddressLookup__c WHERE RequestKey__c IN :keys',
+            new Map<String,Object>{'keys'=>keys}, AccessLevel.SYSTEM_MODE)) {
+            if (existing.Status__c == 'PENDING' || existing.Status__c == 'RUNNING') pending.remove(existing.RequestKey__c);
+            else {
+                // A later explicit address change can retry; old terminal audit remains intact.
+                existing.RequestKey__c = null;
+                completedKeys.add(existing);
+            }
+        }
+        if (!completedKeys.isEmpty()) Database.update(completedKeys, AccessLevel.SYSTEM_MODE);
         if (pending.isEmpty()) return;
         Database.insert(pending.values(), AccessLevel.SYSTEM_MODE);
         // Durable requests survive exhausted queueable slots; scheduled sweep resumes them.
