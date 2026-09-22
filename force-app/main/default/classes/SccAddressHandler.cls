@@ -21,7 +21,7 @@ public without sharing class SccAddressHandler {
             if (oldValues != null && hash == fingerprint(oldValues.get(value.Id))) continue;
             String key = String.valueOf(value.Id) + ':' + hash;
             pending.put(key, new SccAddressLookup__c(Account__c=value.Id,RequestKey__c=key,
-                Fingerprint__c=hash,Status__c='PENDING',Detail__c='等待地址识别；无法识别时联网查询'));
+                Fingerprint__c=hash,Status__c='PENDING',Reason__c='等待处理',Detail__c='等待地址识别；无法识别时联网查询'));
         }
         if (pending.isEmpty()) return;
         Set<String> keys = pending.keySet();

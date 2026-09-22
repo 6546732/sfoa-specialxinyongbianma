@@ -12,7 +12,7 @@ private class SccAddressJobTest {
         row.Status__c='RUNNING'; update row; return row.Id;
     }
     private static SccAddressLookup__c audit(Id accountId) {
-        return [SELECT Status__c,Method__c,Sources__c,Detail__c FROM SccAddressLookup__c WHERE Account__c=:accountId LIMIT 1];
+        return [SELECT Status__c,Reason__c,Method__c,Sources__c,Detail__c FROM SccAddressLookup__c WHERE Account__c=:accountId LIMIT 1];
     }
     @IsTest static void fillsStreetWithoutCalloutAndDoesNotTouchCode() {
         Account value=customer('广东省深圳市南山区科技园');
@@ -24,6 +24,8 @@ private class SccAddressJobTest {
         System.assertEquals('深圳市',actual.BillingCity);
         System.assertEquals('KEEP',actual.xinyongdaima__c);
         System.assertEquals('STREET',audit(value.Id).Method__c);
+        System.assertEquals('地址识别成功',audit(value.Id).Reason__c);
+        System.assertEquals(1,[SELECT COUNT() FROM SccAddressLookup__c WHERE Reason__c='地址识别成功']);
         System.assertEquals(1,[SELECT COUNT() FROM SccAddressLookup__c WHERE Account__c=:value.Id]);
     }
     @IsTest static void queriesWebOnlyWhenNeeded() {
@@ -33,6 +35,7 @@ private class SccAddressJobTest {
         System.assertEquals('广东省',[SELECT BillingState FROM Account WHERE Id=:value.Id].BillingState);
         System.assertEquals('COMPLETED',audit(value.Id).Status__c);
         System.assert(audit(value.Id).Sources__c.contains('example.test'));
+        System.assertEquals('联网查询成功',audit(value.Id).Reason__c);
     }
     @IsTest static void fillsFreeTradeZoneAndCanRetryAfterProvinceClearedAgain() {
         Account value=customer('中国（上海）自由贸易试验区临港新片区云汉路979号2楼');
@@ -67,6 +70,8 @@ private class SccAddressJobTest {
         Test.setMock(HttpCalloutMock.class,new AddressMock(mode,value.Id));
         Test.startTest(); System.enqueueJob(new SccAddressJob(job)); Test.stopTest();
         System.assertEquals(expected,audit(value.Id).Status__c,audit(value.Id).Detail__c);
+        if (mode=='http' || mode=='json' || mode=='noSearch') System.assertEquals('联网调用失败',audit(value.Id).Reason__c);
+        if (mode=='other' || mode=='noSource') System.assertEquals('未找到可靠资料',audit(value.Id).Reason__c);
         if (mode=='other') System.assert(audit(value.Id).Detail__c.contains('返回名称“另一客户”'));
         if (mode=='noSource') System.assert(audit(value.Id).Detail__c.contains('未提供可核验来源'));
         return value;
@@ -130,6 +135,7 @@ private class SccAddressJobTest {
         System.assertEquals(province,actual.BillingState,'Never normalize or overwrite existing province.');
         System.assertEquals(status=='COMPLETED'?'深圳市':null,actual.BillingCity);
         System.assertEquals(status,audit(a.Id).Status__c);
+        System.assertEquals(status=='NO_MATCH'?'省市冲突或无法核验':method=='STREET'?'地址识别成功':'联网查询成功',audit(a.Id).Reason__c);
         System.assertEquals(method,audit(a.Id).Method__c);
         System.assertEquals(1,[SELECT COUNT() FROM SccAddressLookup__c WHERE Account__c=:a.Id],'No recursive task after filling city.');
     }

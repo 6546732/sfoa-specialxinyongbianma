@@ -11,7 +11,8 @@
             <p>后台逐条处理，页面每10秒更新进度。关闭页面后任务继续，可在“客户地址补全记录”查看结果。失败或未匹配不会自动反复联网；核对后可重新上传相应ID。</p>
             <p class="slds-m-vertical_small" role="status">{summary}</p>
             <template lwc:if={error}><p class="slds-text-color_error" role="alert">{error}</p></template>
-            <lightning-datatable key-field="key" data={rows} columns={columns} hide-checkbox-column></lightning-datatable>
+            <lightning-combobox label="按处理原因筛选" value={reasonFilter} options={reasonOptions} onchange={filterReason}></lightning-combobox>
+            <lightning-datatable key-field="key" data={visibleRows} columns={columns} hide-checkbox-column sorted-by={sortedBy} sorted-direction={sortDirection} onsort={sortRows}></lightning-datatable>
         </div>
     </lightning-card>
 </template>

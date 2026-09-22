@@ -6,6 +6,7 @@ public with sharing class SccAddressBulkController {
         @AuraEnabled public String name;
         @AuraEnabled public String status;
         @AuraEnabled public String detail;
+        @AuraEnabled public String reason;
         @AuraEnabled public Id requestId;
         @AuraEnabled public String province;
         @AuraEnabled public String city;
@@ -78,10 +79,10 @@ public with sharing class SccAddressBulkController {
             SccAddressHandler.capture(eligible,null);
             // Authorized Accounts only. The existing trigger queue may be owned by another user.
             for (SccAddressLookup__c audit : (List<SccAddressLookup__c>)Database.queryWithBinds(
-                'SELECT Id,Account__c,Status__c,Detail__c FROM SccAddressLookup__c WHERE RequestKey__c IN :keys',
+                'SELECT Id,Account__c,Status__c,Reason__c,Detail__c FROM SccAddressLookup__c WHERE RequestKey__c IN :keys',
                 new Map<String,Object>{'keys'=>keys},AccessLevel.SYSTEM_MODE)) {
                 Row row=byId.get(audit.Account__c); row.requestId=audit.Id;
-                row.status=audit.Status__c; row.detail=audit.Detail__c;
+                row.status=audit.Status__c; row.detail=audit.Detail__c; row.reason=audit.Reason__c;
             }
         }
         return rows;
@@ -90,7 +91,7 @@ public with sharing class SccAddressBulkController {
         authorize();
         if (requestIds==null || requestIds.size()>300) throw new AuraHandledException('查询请求不得超过300条。');
         List<SccAddressLookup__c> audits=Database.queryWithBinds(
-            'SELECT Id,Account__c,Status__c,Detail__c,Province__c,City__c,Method__c,Sources__c FROM SccAddressLookup__c WHERE Id IN :ids',
+            'SELECT Id,Account__c,Status__c,Reason__c,Detail__c,Province__c,City__c,Method__c,Sources__c FROM SccAddressLookup__c WHERE Id IN :ids',
             new Map<String,Object>{'ids'=>requestIds},AccessLevel.SYSTEM_MODE);
         Set<Id> accountIds=new Set<Id>();
         for (SccAddressLookup__c audit:audits) accountIds.add(audit.Account__c);
@@ -100,7 +101,7 @@ public with sharing class SccAddressBulkController {
         for (SccAddressLookup__c audit:audits) {
             if (!visible.containsKey(audit.Account__c)) continue;
             Row row=new Row(); row.requestId=audit.Id; row.inputId=String.valueOf(audit.Account__c);
-            row.name=visible.get(audit.Account__c).Name; row.status=audit.Status__c; row.detail=audit.Detail__c;
+            row.name=visible.get(audit.Account__c).Name; row.status=audit.Status__c; row.detail=audit.Detail__c; row.reason=audit.Reason__c;
             row.province=audit.Province__c; row.city=audit.City__c; row.method=audit.Method__c; row.sources=audit.Sources__c;
             rows.add(row);
         }

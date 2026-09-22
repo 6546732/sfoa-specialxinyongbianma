@@ -5,9 +5,20 @@ import progress from '@salesforce/apex/SccAddressBulkController.progress';
 const labels = { READY:'可处理', PENDING:'排队中', RUNNING:'处理中', COMPLETED:'已补全', NO_MATCH:'未查到可靠结果', FAILED:'处理失败', SKIPPED:'已跳过', INVALID:'ID无效' };
 export default class SccAddressBulk extends LightningElement {
     rows = []; csv = ''; busy = false; error = ''; submitted = false; timer;
+    reasonFilter = ''; sortDirection = 'asc'; sortedBy = 'reason';
+    get reasonOptions() {
+        return [{label:'全部原因',value:''}, ...[...new Set(this.rows.map(r=>r.reason || '未分类'))]
+            .sort().map(value=>({label:value,value}))];
+    }
+    get visibleRows() {
+        const rows=this.rows.filter(r=>!this.reasonFilter || (r.reason || '未分类')===this.reasonFilter);
+        return [...rows].sort((a,b)=>String(a[this.sortedBy] || '').localeCompare(String(b[this.sortedBy] || ''),'zh-CN') * (this.sortDirection==='asc'?1:-1));
+    }
+    filterReason(event) { this.reasonFilter=event.detail.value; }
+    sortRows(event) { this.sortedBy=event.detail.fieldName; this.sortDirection=event.detail.sortDirection; }
     columns = [
         {label:'客户ID',fieldName:'inputId'}, {label:'客户名称',fieldName:'name'},
-        {label:'状态',fieldName:'statusLabel'}, {label:'说明',fieldName:'detail',wrapText:true},
+        {label:'状态',fieldName:'statusLabel'}, {label:'处理原因',fieldName:'reason',sortable:true}, {label:'说明',fieldName:'detail',wrapText:true},
         {label:'省份',fieldName:'province'}, {label:'城市',fieldName:'city'},
         {label:'识别方式',fieldName:'methodLabel'}, {label:'来源',fieldName:'sourceText',wrapText:true}
     ];
@@ -27,7 +38,7 @@ export default class SccAddressBulk extends LightningElement {
     }
     async upload(event) {
         const file = event.target.files[0]; if (!file) return;
-        clearTimeout(this.timer); this.rows=[]; this.csv=''; this.submitted=false; this.error='';
+        clearTimeout(this.timer); this.rows=[]; this.csv=''; this.submitted=false; this.error=''; this.reasonFilter='';
         if (file.size > 20000) { this.error='文件过大，请上传最多300条ID的单列CSV。'; return; }
         this.busy=true;
         try {

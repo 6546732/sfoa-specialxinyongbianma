@@ -1,5 +1,9 @@
 # Salesforce 特殊客户编码项目交接说明
 
+## 2026-09-22 处理原因分类
+
+新增地址审计 Reason__c 受限选项列表，由 Handler/Job 按明确执行分支写入；Detail__c 仍是长文本详情。新增 Address_Results 列表视图及批量页面原因筛选排序，查看权限加入 SccAddressAuditViewer。历史记录不自动猜测回填。发布时包含 manifest/address-reason.xml 的组件。
+
 ## 2026-09-22 指定 ID 批量入口
 
 新增 SccAddressBulkController、测试类、sccAddressBulk 标签页及 SccAddressBulkAdmin 权限集，支持单列 CSV 最多300条。预检不写入，提交重新校验资料及记录编辑权限；只入队符合条件且可编辑的客户，复用地址请求与处理器。详情见 docs/ADDRESS-BULK.md。不得将上传的客户ID文件提交Git。下一次打包包含此入口；生产安装仍由用户手动执行。

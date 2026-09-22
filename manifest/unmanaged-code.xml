@@ -64,6 +64,7 @@
     <members>SccAddressLookup__c.Fingerprint__c</members>
     <members>SccAddressLookup__c.Method__c</members>
     <members>SccAddressLookup__c.Province__c</members>
+    <members>SccAddressLookup__c.Reason__c</members>
     <members>SccAddressLookup__c.RequestKey__c</members>
     <members>SccAddressLookup__c.Sources__c</members>
     <members>SccAddressLookup__c.Status__c</members>
@@ -101,6 +102,7 @@
   <types>
     <members>CreditCodeGeneration__c.All</members>
     <members>CreditCodeSequence__c.All</members>
+    <members>SccAddressLookup__c.Address_Results</members>
     <name>ListView</name>
   </types>
   <types>

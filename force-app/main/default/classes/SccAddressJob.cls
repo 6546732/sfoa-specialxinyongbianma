@@ -9,7 +9,7 @@ public without sharing class SccAddressJob implements Queueable, Database.Allows
             'SELECT Id,Status__c,Detail__c FROM SccAddressLookup__c WHERE Status__c=\'RUNNING\' AND LastModifiedDate < :cutoff LIMIT 100',
             new Map<String,Object>{'cutoff'=>System.now().addHours(-1)}, AccessLevel.SYSTEM_MODE);
         for (SccAddressLookup__c row : abandoned) {
-            row.Status__c='FAILED'; row.Detail__c='后台任务异常中断，请检查 Apex 作业；未自动重试联网。';
+            row.Status__c='FAILED'; row.Reason__c='后台任务中断'; row.Detail__c='后台任务异常中断，请检查 Apex 作业；未自动重试联网。';
         }
         if (!abandoned.isEmpty()) Database.update(abandoned, AccessLevel.SYSTEM_MODE);
         dispatchNext();
@@ -21,7 +21,7 @@ public without sharing class SccAddressJob implements Queueable, Database.Allows
                 'SELECT Id,Status__c FROM SccAddressLookup__c WHERE Status__c=\'PENDING\' LIMIT 1 FOR UPDATE',
                 new Map<String,Object>(), AccessLevel.SYSTEM_MODE);
             if (pending.isEmpty()) return;
-            pending[0].Status__c='RUNNING';
+            pending[0].Status__c='RUNNING'; pending[0].Reason__c='处理中';
             Database.update(pending, AccessLevel.SYSTEM_MODE);
             System.enqueueJob(new SccAddressJob(pending[0].Id));
             return;
@@ -42,10 +42,11 @@ public without sharing class SccAddressJob implements Queueable, Database.Allows
             'SELECT Id,Account__c,Fingerprint__c,Status__c FROM SccAddressLookup__c WHERE Id=:lookupId',
             new Map<String,Object>{'lookupId'=>lookupId}, AccessLevel.SYSTEM_MODE)[0];
         if (audit.Status__c != 'RUNNING') return;
+        Boolean readingWebResult = false;
         try {
             List<Account> records = loadAccount(audit.Account__c, false);
             if (records.isEmpty() || !unchanged(records[0], audit)) {
-                finish(audit,'SKIPPED','客户资料已变化、省市已完整或经营范围为空'); return;
+                finish(audit,'SKIPPED','客户资料变化或条件不符','客户资料已变化、省市已完整或经营范围为空'); return;
             }
             Account original = records[0];
             SccAddressResolver.Match match = SccAddressResolver.resolve(original.BillingStreet);
@@ -54,7 +55,9 @@ public without sharing class SccAddressJob implements Queueable, Database.Allows
             if (String.isBlank(match.province) || (String.isBlank(original.BillingCity) && String.isBlank(match.city))) {
                 method = 'WEB';
                 audit.Method__c=method;
+                readingWebResult = true;
                 SccDeepSeekClient.ResearchResult result = SccDeepSeekClient.researchAddress(original);
+                readingWebResult = false;
                 audit.Sources__c = JSON.serialize(result.sources);
                 audit.Detail__c = result.notes;
                 if (String.isNotBlank(result.previousCompanyName)
@@ -72,47 +75,48 @@ public without sharing class SccAddressJob implements Queueable, Database.Allows
                     rejected.add('返回名称“' + result.matchedCompanyName + '”与客户名称“' + original.Name + '”不一致');
                 if (result.sources == null || result.sources.isEmpty()) rejected.add('未提供可核验来源');
                 if (!rejected.isEmpty()) {
-                    finish(audit,'NO_MATCH',String.join(rejected,'；')
+                    finish(audit,'NO_MATCH','未找到可靠资料',String.join(rejected,'；')
                         + (String.isBlank(result.notes) ? '' : '。查询说明：' + result.notes)); return;
                 }
                 if (String.isBlank(result.billingCity)) {
-                    finish(audit,'NO_MATCH','联网未提供可验证的城市'); return;
+                    finish(audit,'NO_MATCH','未找到可靠资料','联网未提供可验证的城市'); return;
                 }
                 match = SccAddressResolver.validatePair(result.billingState, result.billingCity);
             }
             audit.Method__c=method;
-            if (String.isBlank(match.province)) { finish(audit,'NO_MATCH',match.reason); return; }
+            if (String.isBlank(match.province)) { finish(audit,'NO_MATCH','省市冲突或无法核验',match.reason); return; }
             if (String.isNotBlank(original.BillingState)) {
                 SccAddressResolver.Match existingProvince=SccAddressResolver.validatePair(original.BillingState,null);
                 if (existingProvince.province != match.province) {
-                    finish(audit,'NO_MATCH','识别结果与客户已有省份冲突或已有省份无法核验'); return;
+                    finish(audit,'NO_MATCH','省市冲突或无法核验','识别结果与客户已有省份冲突或已有省份无法核验'); return;
                 }
             }
             // Existing city is authoritative. A conflict must never be silently filled around.
             if (String.isNotBlank(original.BillingCity)) {
                 SccAddressResolver.Match existing = SccAddressResolver.validatePair(match.province, original.BillingCity);
                 if (String.isBlank(existing.province) || (String.isNotBlank(match.city) && existing.city != match.city)) {
-                    finish(audit,'NO_MATCH','识别结果与客户已有城市冲突或已有城市无法核验'); return;
+                    finish(audit,'NO_MATCH','省市冲突或无法核验','识别结果与客户已有城市冲突或已有城市无法核验'); return;
                 }
             }
             if (String.isNotBlank(original.BillingCountry)
                 && !new Set<String>{'中国','中國','CHINA','CN','CHN','中华人民共和国'}.contains(original.BillingCountry.trim().toUpperCase())) {
-                finish(audit,'NO_MATCH','现有国家/地区不适用大陆省市配置，需人工核对'); return;
+                finish(audit,'NO_MATCH','地区不适用','现有国家/地区不适用大陆省市配置，需人工核对'); return;
             }
             List<Account> current = loadAccount(original.Id, true);
             if (current.isEmpty() || !unchanged(current[0], audit)) {
-                finish(audit,'SKIPPED','查询期间客户资料已变化，未写入过期结果'); return;
+                finish(audit,'SKIPPED','客户资料变化或条件不符','查询期间客户资料已变化，未写入过期结果'); return;
             }
             Account patch = new Account(Id=original.Id);
             if (String.isBlank(current[0].BillingState)) patch.BillingState=match.province;
             if (String.isBlank(current[0].BillingCity) && String.isNotBlank(match.city)) patch.BillingCity=match.city;
             Database.update(patch, AccessLevel.SYSTEM_MODE);
             audit.Province__c=match.province; audit.City__c=match.city;
-            finish(audit,'COMPLETED',method == 'STREET' ? '根据开单街道和省市配置补齐空字段'
+            finish(audit,'COMPLETED',method == 'STREET' ? '地址识别成功' : '联网查询成功',method == 'STREET' ? '根据开单街道和省市配置补齐空字段'
                 : matchedByRename ? '根据联网更名证据确认同一主体，并通过省市配置核验后补齐空字段'
                 : '根据联网来源及省市配置核验后补齐空字段');
         } catch (Exception error) {
-            finish(audit,'FAILED',error.getMessage());
+            finish(audit,'FAILED',readingWebResult
+                ? '联网调用失败' : '处理异常',error.getMessage());
         }
     }
 
@@ -126,8 +130,8 @@ public without sharing class SccAddressJob implements Queueable, Database.Allows
             new Map<String,Object>{'accountId'=>accountId}, AccessLevel.SYSTEM_MODE);
     }
 
-    private static void finish(SccAddressLookup__c audit, String status, String detail) {
-        audit.Status__c=status;
+    private static void finish(SccAddressLookup__c audit, String status, String reason, String detail) {
+        audit.Status__c=status; audit.Reason__c=reason;
         audit.Detail__c=String.isBlank(detail) ? status : detail.left(3000);
         Database.update(audit, AccessLevel.SYSTEM_MODE);
     }
